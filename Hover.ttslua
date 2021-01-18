@@ -2,6 +2,7 @@ globalLastQTake = nil
 
 function onObjectHover(playerColor, hoveredObject)
     if playerColor ~= gameModel.currentPlayer then return end
+    if gameModel.state ~= "ready" then return end
 
     if hoveredObject ~= nil then
         if isClass(hoveredObject, "card") and isClass(hoveredObject, "action") then
@@ -15,7 +16,13 @@ end
 
 function clearHover()
     if globalLastQTake ~= nil then
-        globalLastQTake.clearButtons()
+        local buttons = globalLastQTake.getButtons()
+        if buttons == nil then return end
+        for i = 1, #buttons do
+            if buttons[i].label == "Pay & Take" then
+                globalLastQTake.removeButton(i - 1)
+            end
+        end
     end
     globalLastQTake = nil
 end
@@ -43,8 +50,8 @@ function addQuickTakeButton(card, functionName)
    parameters = {
        click_function = "quickTake",
        label = "Pay & Take",
-       position = {0, 0.5, 1.75},
-       scale = {3, 1, 2},
+       position = {0, 0.5, 1.65},
+       scale = {2.5, 1, 2},
        width = 500,
        height = 125,
        font_size = 90,

@@ -175,6 +175,7 @@ end
 
 function endTurnCleanup()
     gameModel.state = "paused"
+    removeActionCardButtons()
 
     -- updateScore
     tallyScore(gameModel.currentPlayer)
@@ -338,7 +339,7 @@ function quickPromote(cubes, playerColor)
        end
    end
 
-   if gameModel.state == "promote" then
+   if gameModel.state == "ready" or gameModel.state == "promote" then
        doPromote(cubes, cb)
    end
 end
@@ -405,25 +406,6 @@ function rest(obj, playerColor)
    if gameModel.state == "discard" then
        passTurn(playerColor)
    end
-end
-
-function addTakeButton(card, functionName)
-   if card == nil then return end
-   if card.getButtons() ~= nil then return end
-
-   parameters = {
-       click_function = functionName,
-       label = "Take",
-       position = {0, 0.5, 1.75},
-       scale = {2, 1, 2},
-       width = 500,
-       height = 125,
-       font_size = 120,
-       color = {0.9, 0.1, 0.1}
-   }
-
-   card.createButton(parameters);
-   return card.getButtons()[1]
 end
 
 function moveCardToHand(card, playerColor)

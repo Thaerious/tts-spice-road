@@ -111,6 +111,7 @@ function onObjectDrop(color, card)
 
     if isInHand(card, color) == false and card.getVar("state") ~= "spent" and color == gameModel.currentPlayer then
         card.registerCollisions()
+        setupContextMenu(card)
     elseif isInHand(card, color) == true then
         card.unregisterCollisions()
         card.call("resetState")

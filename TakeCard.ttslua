@@ -40,7 +40,7 @@ end
 function removeActionCardButtons()
     for i, card in ipairs(getActionCards()) do
        local buttons = card.getButtons()
-       if i~= 1 and buttons ~= nil then
+       if i ~= 1 and buttons ~= nil then
            card.removeButton(0);
        end
     end
@@ -50,6 +50,7 @@ end
 function updateAllButtons()
     removeActionCardButtons()
     local actionCards = getActionCards()
+    if #actionCards <= 1 then return end
 
     local flagFound = true
     for i = 1, #actionCards do
@@ -81,19 +82,21 @@ end
 
 -- remove ownership on all cubes on all buyable action cards
 function clearCubeOwners()
+    log("clearCubeOwners")
     local actionCards = getActionCards()
 
     for i = 1, #actionCards do
         local cubes = getCubesOn(actionCards[i])
         for j = 1, #cubes do
-            cubeSetOwner(cubes[i], nil)
+            cubeSetOwner(cubes[j], nil)
         end
     end
 end
 
 function takeActionCard(card, playerColor)
     if playerColor ~= gameModel.currentPlayer then return end
-    if gameModel.state ~= "ready" and gameModel.state ~= "taking_action" then return end
+    if gameModel.state ~= "ready" and gameModel.state ~= "taking_action_card" then return end
+    gameModel.state = "taking_action_card"
     cb = cb or function() end
 
     if card.getButtons() ~= nil then card.removeButton(0) end
@@ -147,4 +150,23 @@ function takePointCard(card, playerColor)
     card.setVar("owner", playerColor)
     t = gameModel.players[playerColor].pointCards
     table.insert(t, card.getGUID())
+end
+
+function addTakeButton(card, functionName)
+   if card == nil then return end
+   --if card.getButtons() ~= nil then return end
+
+   parameters = {
+       click_function = functionName,
+       label = "Take",
+       position = {0, 0.5, 1.65},
+       scale = {2.5, 1, 2},
+       width = 500,
+       height = 125,
+       font_size = 120,
+       color = {0.9, 0.1, 0.1}
+   }
+
+   card.createButton(parameters);
+   return card.getButtons()[1]
 end
