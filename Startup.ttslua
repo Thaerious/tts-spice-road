@@ -1,5 +1,5 @@
 DEBUG_PLAYER_COUNT = 3
-
+    
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad(saved_data)
     getObjectFromGUID(keys.playingIndicator).registerCollisions()
@@ -147,7 +147,6 @@ function clearExtraPieces()
 end
 
 function setupCaravanCards()
-    -- add pickup buttons
     for color,key in pairs(keys.caravanCards) do
         local caravanCard = getObjectFromGUID(key)
         if caravanCard ~= nil then

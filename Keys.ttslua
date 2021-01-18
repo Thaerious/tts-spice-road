@@ -1,3 +1,4 @@
+
 keys = {
     board = "88e31a",
     pointCards = "0b392c",
@@ -100,7 +101,7 @@ bots = {
 gameModel = {
     lastRound = false,
     currentPlayer = "White",
-    state = "not_started", -- "not_started", "ready", "paused", "promote", "exchange", "taking_action" "discard", "game_over"
+    state = "not_started", -- "not_started", "ready", "paused", "taking_action" "discard", "game_over"
     paidIndex = 0,
     numPlayers = 0,
     turns = {"White", "Yellow", "Red", "Green", "Blue"},

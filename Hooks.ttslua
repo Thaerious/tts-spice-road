@@ -32,25 +32,19 @@ function onObjectCollisionEnter(registeredObject, collisionInfo)
 
     -- when an action card collides
 
-    log("onObjectCollisionEnter")
-    log(registeredObject)
     if isClass(registeredObject, "card") then
         log(registeredObject.getGUID() ~= gameModel.active.guid)
         if isActiveSpent() == false and registeredObject.getGUID() ~= gameModel.active.guid then
-            log("SET ACTIVE CARD")
             setActive(registeredObject)
             if isClass(registeredObject, "collect") then collect() end
         elseif isClass(collisionObject, "cube") and registeredObject.getVar("status") ~= "spent" then
-            log("CUBE COLLISION")
             cubeCollideCard(registeredObject, collisionObject)
-        else
-            log("NONE")
         end
     end
 end
 
 function cubeCollideCard(card, cube)
-    activeObject = getObjectFromGUID(gameModel.active.guid)
+    local activeObject = getObjectFromGUID(gameModel.active.guid)
 
     if card ~= activeObject and activeObject.getVar("state") ~= "spent" then
         setActive(card)
@@ -60,7 +54,7 @@ function cubeCollideCard(card, cube)
 
     if isClass(card, "exchange") then
         exchangeCube(card, gameModel.currentPlayer)
-    elseif isClass(card, "promote") then 
+    elseif isClass(card, "promote") then
         promoteAct(card, gameModel.currentPlayer)
     end
 end
@@ -69,7 +63,7 @@ end
 -- return false if active card is not spent, or is not set
 function isActiveSpent()
     if gameModel.active.guid == "" then return false end
-    activeCard = getObjectFromGUID(gameModel.active.guid)
+    local activeCard = getObjectFromGUID(gameModel.active.guid)
     return activeCard.getVar("state") == "spent"
 end
 

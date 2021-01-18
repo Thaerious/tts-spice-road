@@ -24,6 +24,14 @@ function CubeCollection:getCube(color)
     return nil
 end
 
+function CubeCollection:getCubes(color)
+    local r = CubeCollection:new()
+    for i = 1,#self do
+        if isClass(self[i], color) then r:add(self[i]) end
+    end
+    return r
+end
+
 function CubeCollection:add(cube)
     table.insert(self, cube)
 end
