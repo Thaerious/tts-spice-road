@@ -1,0 +1,123 @@
+keys = {
+    board = "88e31a",
+    pointCards = "0b392c",
+    actionCards = "757670",
+    playingIndicator = "085f7b",
+    centerText = "3b67af", -- last turn
+    startingCards = {
+        White = {"5934a2", "0687b0"},
+        Yellow = {"938df7", "200c7b"},
+        Red = {"3676e6", "874bd4"},
+        Green = {"92e907", "7d960a"},
+        Blue = {"930e39", "4d5f89"}
+    },
+    ribbons = {
+        "7c01ea",
+        "3d4e4c",
+        "9660c3"
+    },
+    bags = {
+        yellow = "e4d921",
+        red = "11bb02",
+        green = "370bc9",
+        brown = "3d5ff9"
+    },
+    coinBags = {
+        gold = "d7c969",
+        silver = "b1b2e4"
+    },
+    caravanCards = {
+        White = "93feb2",
+        Yellow = "2559fe",
+        Red = "d79a0a",
+        Green = "f23594",
+        Blue = "983060"
+    },
+    caravanCardZone = {
+        White = "04534d",
+        Yellow = "495d87",
+        Red = "9a2684",
+        Green = "4f2bcc",
+        Blue = "66c6b5"
+    },
+    actionCardsScriptingZone = {
+        "29bf77",
+        "06d301",
+        "8f96f8",
+        "39ea07",
+        "686f38",
+        "976c99"
+    },
+    pointCardsScriptingZone = {
+        "04680d",
+        "3f454c",
+        "663dca",
+        "5ee922",
+        "c7d60b"
+    },
+    scores = {
+        White = "888a34",
+        Yellow = "b2b84d",
+        Red = "3420c7",
+        Green = "373281",
+        Blue = "a80557"
+    },
+    names = {
+        White = "fabd30",
+        Yellow = "4160f2",
+        Red = "0026c0",
+        Green = "516409",
+        Blue = "6fd878"
+    }
+}
+
+nextCubeColor = {
+    yellow = "red",
+    red = "green",
+    green = "brown",
+    brown = "brown"
+}
+
+loc = {
+    coins = {
+        gold = {x = -6.47, y = 1.77, z = 22.24},
+        silver = {x = -1.30, y = 1.77, z = 22.24}
+    },
+    decks = {
+        pointCards = {x = 20.11, y = 1.94, z = 17.74},
+        actionCards = {x = 19.95, y = 1.97, z = 8.60}
+    }
+}
+
+bots = {
+    White = nil,
+    Yellow = nil,
+    Red = nil,
+    Green = nil,
+    Blue = nil,
+}
+
+gameModel = {
+    lastRound = false,
+    currentPlayer = "White",
+    state = "not_started", -- "not_started", "ready", "paused", "promote", "exchange", "taking_action" "discard", "game_over"
+    paidIndex = 0,
+    numPlayers = 0,
+    turns = {"White", "Yellow", "Red", "Green", "Blue"},
+    victoryCondition = 5,
+    nextPlayer = { -- keyed by player color, indicate next color
+        White = "White"
+    },
+    players = {
+        White  = {bot = false, dev = false, score = 0, actionCards = {keys.startingCards["White"][1], keys.startingCards["White"][2]}, pointCards = {}, coins = {}},
+        Yellow = {bot = false, dev = false, score = 0, actionCards = {keys.startingCards["Yellow"][1], keys.startingCards["Yellow"][2]}, pointCards = {}, coins = {}},
+        Red    = {bot = false, dev = false, score = 0, actionCards = {keys.startingCards["Red"][1], keys.startingCards["Red"][2]}, pointCards = {}, coins = {}},
+        Green  = {bot = false, dev = false, score = 0, actionCards = {keys.startingCards["Green"][1], keys.startingCards["Green"][2]}, pointCards = {}, coins = {}},
+        Blue   = {bot = false, dev = false, score = 0, actionCards = {keys.startingCards["Blue"][1], keys.startingCards["Blue"][2]}, pointCards = {}, coins = {}}
+    },
+    active = { -- information regarding the current card being played
+        action = "", -- {"promote", "exchange", "collect"}
+        guid = "",
+        value = ""
+    }
+}

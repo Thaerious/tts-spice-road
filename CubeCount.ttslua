@@ -1,0 +1,70 @@
+-- class CubeCount key:value -> color:count pairs
+CubeCount = {yellow = 0, red = 0, green = 0, brown = 0}
+function CubeCount:new(o)
+    o = o or {yellow = 0, red = 0, green = 0, brown = 0}
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+function CubeCount:copy()
+    local r = CubeCount:new()
+    r.yellow = self.yellow
+    r.red = self.red
+    r.green = self.green
+    r.brown = self.brown
+    return r
+end
+
+-- return false if any value in this is < the corresponding value in that
+-- return true if all values in this are >= the corresponding value in that
+function CubeCount:has(that)
+    if self.yellow < that.yellow then return false end
+    if self.red < that.red then return false end
+    if self.green < that.green then return false end
+    if self.brown < that.brown then return false end
+    return true
+end
+
+function CubeCount:equals(that)
+    if self.yellow ~= that.yellow then return false end
+    if self.red ~= that.red then return false end
+    if self.green ~= that.green then return false end
+    if self.brown ~= that.brown then return false end
+    return true
+end
+
+function CubeCount:add(that)
+    self.yellow = self.yellow + that.yellow
+    self.red = self.red + that.red
+    self.green = self.green + that.green
+    self.brown = self.brown + that.brown
+    return true
+end
+
+function CubeCount:subtract(that)
+    self.yellow = self.yellow - that.yellow
+    self.red = self.red - that.red
+    self.green = self.green - that.green
+    self.brown = self.brown - that.brown
+    return true
+end
+
+-- count all cubes, return the sum
+function CubeCount:sum()
+    local r = 0
+    r = r + self.yellow
+    r = r + self.red
+    r = r + self.green
+    r = r + self.brown
+    return r
+end
+
+function CubeCount:toString()
+    local r = ""
+    for i = 1,self.yellow do r = r .. "Y" end
+    for i = 1,self.red do r = r .. "R" end
+    for i = 1,self.green do r = r .. "G" end
+    for i = 1,self.brown do r = r .. "B" end
+    return r
+end

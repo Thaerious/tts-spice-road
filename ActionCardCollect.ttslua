@@ -1,0 +1,8 @@
+#include ActionCard
+
+modelClass = "card action collect"
+
+-- change state from ready to spent
+function resetState()
+    state = "ready"
+end

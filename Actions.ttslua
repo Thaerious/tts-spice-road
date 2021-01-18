@@ -1,0 +1,145 @@
+-- called when a action-exchange card starts colliding
+-- removes valid cubes is available and inserts new cubes
+function broadcastExchangeCard(card)
+   local from = CubeCount:new(card.getTable("from"))
+   local to = CubeCount:new(card.getTable("to"))
+   local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+   local msg = playerName .. " played card exchange " .. from:toString() .. " -> " .. to:toString()
+   broadcastToAll(msg, gameModel.currentPlayer)
+end
+
+-- call exchange start first
+-- check if all cubes on the action card are valid
+-- check if the action card cost is met
+-- if both conditions are true:
+-- perform the exchange using the cubes on the action card
+function exchangeCube(cube, playerColor)
+   
+   local card = getObjectFromGUID(gameModel.active.guid)
+   local cubes = getCubesOn(card, 1.5)
+   local from = gameModel.active.value.from
+
+   -- if a cube within range is not owned, terminate exchange
+   for i,c in ipairs(cubes) do
+       if c.getVar("owner") != gameModel.currentPlayer then
+           broadcastToAll("Can not exchange unowned cubes", gameModel.currentPlayer)
+           return
+       end
+   end
+
+   -- todo remove next two lines
+   --if gameModel.state == "paused" then return end
+   --gameModel.state = "paused"
+
+   if cubes:has(from) then
+      doExchange(cubes, playerColor)
+   end
+end
+
+-- using cubes as payment convert cubes according to gameModel.active.value
+-- the new cubes will be added to the carvan card of the current player
+-- the current action card will become spent
+function doExchange(cubes, playerColor, cb)
+   cb = cb or function() end
+   local from = gameModel.active.value.from
+   local to = gameModel.active.value.to
+   local card = getObjectFromGUID(gameModel.active.guid)
+
+   if (cubes:has(from) == false) then return end
+   card.setVar("state", "spent");
+   cubes:subset(from):destruct()
+
+   local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+   local msg = playerName .. " exchanged " .. from:toString() .. " -> " .. to:toString()
+   broadcastToAll(msg, gameModel.currentPlayer)
+
+   -- wait for 1 frame, then
+   -- add the cubes to the player card and call the function 'cb'
+   -- if another echange can be made, call idle
+   -- else call passTurn
+   Wait.frames(
+      function()
+          if getPlayerCubes(gameModel.currentPlayer):has(from) then
+              addCubesToPlayerCard(gameModel.currentPlayer, to, function()
+                  cb()
+                  idle()
+               end)
+          else
+              addCubesToPlayerCard(gameModel.currentPlayer, to, function()
+                  cb()
+                  passTurn(playerColor)
+              end)
+          end
+      end, 1)
+end
+
+-- called when promote card collides with the ground (played)
+function broadCastPromoteCard(card)
+   local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+   local msg = playerName .. " played card promote " .. card.getVar("startingCount")
+   broadcastToAll(msg, gameModel.currentPlayer)
+end
+
+-- called when a cube collides with a promote card
+-- will promote all cubes on (near) the card and place them on the current players caravan
+function promoteAct(card, playerColor)
+   local cubes = getCubesOn(card, 1.5)
+   local newCubes = doPromote(cubes, function()
+      if gameModel.active.value == 0 then passTurn(playerColor) end
+   end)
+   moveCubesToPlayerCard(playerColor, newCubes)
+   card.setVar("state", "spent");
+end
+
+-- cubes: cube collection
+-- return: new cubes
+function doPromote(cubes, cb)
+   local newCubes = CubeCollection:new()
+
+   for i,cube in ipairs(cubes) do
+       if gameModel.active.value ~= 0 then
+           local color = getCubeColor(cube)
+           if color == "brown" then goto continue end
+
+           local nextColor = nextCubeColor[color]
+           local position = cube.getPosition()
+           cube.destruct()
+
+           gameModel.active.value = gameModel.active.value - 1
+
+           local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+           local msg = playerName .. " promoted " .. color .. "->" .. nextColor
+           broadcastToAll(msg, gameModel.currentPlayer)
+
+           if i < #cubes then
+               newCubes[#newCubes + 1] = giveCubeToPlayer(nextColor, gameModel.currentPlayer, position, nil);
+           else
+               newCubes[#newCubes + 1] = giveCubeToPlayer(nextColor, gameModel.currentPlayer, position, cb);
+           end
+       elseif i >= #cubes then
+           cb()
+       end
+       ::continue::
+   end
+
+   return newCubes
+end
+
+--called when a action-collect card starts colliding (played)
+function collect()
+   local card = getObjectFromGUID(gameModel.active.guid)
+   local player = Player[gameModel.currentPlayer]
+   local cubes = card.getTable("cubes")
+   local count = CubeCount:new(cubes)
+   local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+   local msg = playerName .. " played card collect " .. count:toString()
+   broadcastToAll(msg, gameModel.currentPlayer)
+
+   card.unregisterCollisions()
+   gameModel.state = "paused" -- prevent plays during animation
+   card.setVar("state", "spent");
+
+   addCubesToPlayerCard(gameModel.currentPlayer, CubeCount:new(card.getTable("cubes")), function()
+      passTurn(card.getVar("owner"))
+   end);
+end

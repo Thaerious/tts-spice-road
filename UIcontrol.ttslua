@@ -1,0 +1,31 @@
+GLOBAL_BOT_COUNT = 0
+
+function hideUI()
+    UI.setAttributes("pWelcome", {active = "false"})
+end
+
+function botsMinus()
+    if GLOBAL_BOT_COUNT == 0 then return end
+    GLOBAL_BOT_COUNT = GLOBAL_BOT_COUNT - 1
+
+    if GLOBAL_BOT_COUNT == 1 then
+        UI.setAttributes("tBotCount", {text=GLOBAL_BOT_COUNT .. " Bot"})
+    else
+        UI.setAttributes("tBotCount", {text=GLOBAL_BOT_COUNT .. " Bots"})
+    end
+end
+
+function botsPlus()
+    if GLOBAL_BOT_COUNT == 4 then return end
+    GLOBAL_BOT_COUNT = GLOBAL_BOT_COUNT + 1
+
+    if GLOBAL_BOT_COUNT == 1 then
+        UI.setAttributes("tBotCount", {text=GLOBAL_BOT_COUNT .. " Bot"})
+    else
+        UI.setAttributes("tBotCount", {text=GLOBAL_BOT_COUNT .. " Bots"})
+    end
+end
+
+function hideWelcome()
+    UI.hide("pWelcome")
+end

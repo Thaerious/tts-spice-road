@@ -1,0 +1,7 @@
+#include ActionCard
+
+modelClass = "card action exchange"
+
+function resetState()
+    state = "ready";
+end

@@ -1,0 +1,8 @@
+#include ActionCard
+
+modelClass = "card action promote"
+
+function resetState()
+    state = "ready";
+    count = startingCount;
+end

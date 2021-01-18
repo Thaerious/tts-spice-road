@@ -1,0 +1,781 @@
+-- shows the last turn notification
+function showLastTurn()
+    local text = getObjectFromGUID(keys.centerText)
+    local pos = text.getPosition()
+
+    pos.y = 2.0;
+    text.setScale({2, 1.5, 1.5})
+    text.setPosition(pos)
+
+    Wait.time(function() showLastTurnStep(1) end, 0.25)
+end
+
+function showLastTurnStep(i)
+    local text = getObjectFromGUID(keys.centerText)
+    local scale = text.getScale()
+    local pos = text.getPosition()
+    local rot = text.getPosition()
+
+    if i <= 10 then
+        scale.x = scale.x + 0.1
+        pos.y = pos.y + 1
+        text.setScale(scale)
+        text.setPosition(pos)
+        Wait.time(function() showLastTurnStep(i + 1) end, 0.03)
+    elseif i <= 20 then
+        if i % 2 == 1 then rot.y = 5
+        else rot.y = -5 end
+        rot.x = 90
+        text.setRotation(rot)
+        Wait.time(function() showLastTurnStep(i + 1) end, 0.07)
+    elseif i <= 30 then
+        scale.x = scale.x - 0.1
+        pos.y = pos.y - 1
+        text.setRotation({x = 90, y = 0, z = 0})
+        text.setScale(scale)
+        text.setPosition(pos)
+        Wait.time(function() showLastTurnStep(i + 1) end, 0.03)
+    end
+end
+
+-- put ribbons in front of winning players
+function distributeRibbons()
+    local scores = {}
+    for i = 1,gameModel.numPlayers do
+        table.insert(scores, 1, {color = gameModel.turns[i], score = tallyScore(gameModel.turns[i])})
+    end
+
+    for i = 1,gameModel.numPlayers do
+        for j = 1,(gameModel.numPlayers - 1) do
+            if scores[j].score < scores[j+1].score then
+                local temp = scores[j+1]
+                scores[j+1] = scores[j]
+                scores[j] = temp
+            end
+        end
+    end
+
+    for i,score in ipairs(scores) do
+        if (i <= 3) then
+            local caravan = getObjectFromGUID(keys.caravanCards[score.color])
+            local ribbon = getObjectFromGUID(keys.ribbons[i])
+            local pos = caravan.getPosition()
+            pos.y = 3
+            ribbon.setPosition(pos)
+
+            local rot = caravan.getRotation()
+            rot.x = 20
+            ribbon.setRotation(rot)
+
+        end
+    end
+
+end
+
+-- add context menu times for action cards
+-- this is called when the card enters play (touches table)
+function setupContextMenu(card)
+    card.clearContextMenu()
+    if isClass(card, "promote") then
+        card.addContextMenuItem("Yellow -> Red", function(playerColor)
+            local cubes = getPlayerCubes(owner)
+            local cube = cubes:getCube("yellow")
+            quickPromote(CubeCollection:new(cube), playerColor)
+        end)
+
+        card.addContextMenuItem("Red -> Green", function(playerColor)
+            local cubes = getPlayerCubes(owner)
+            local cube = cubes:getCube("red")
+            quickPromote(CubeCollection:new(cube), playerColor)
+        end)
+
+        card.addContextMenuItem("Green -> Brown", function(playerColor)
+            local cubes = getPlayerCubes(owner)
+            local cube = cubes:getCube("green")
+            quickPromote(CubeCollection:new(cube), playerColor)
+        end)
+    elseif isClass(card, "exchange") then
+        card.addContextMenuItem("Do Exchange", quickAction)
+    elseif isClass(card, "collect") then
+    end
+end
+
+-- return a new array containing all cards of the given type from the specified zone
+function getCards(zoneName)
+   r = {}
+   for i,key in ipairs(keys[zoneName]) do
+       local zone = getObjectFromGUID(key)
+       local contents = zone.getObjects()
+       if contents ~= nil then
+           for i,c in ipairs(contents) do
+               if isClass(c, "card") then table.insert(r, c) end
+           end
+       end
+   end
+   return r
+end
+
+-- return an array of all unowned point cards in play
+function getPointCards()
+   return getCards("pointCardsScriptingZone")
+end
+
+-- return an array of all unowned action cards in play
+function getActionCards()
+   return getCards("actionCardsScriptingZone")
+end
+
+function sortActionCards(color, menuPos)
+   local caravanCard = getObjectFromGUID(keys.caravanCardZone[color])
+   local pos = caravanCard.getPosition();
+   pos.x = pos.x - 6
+   pos.z = pos.z - 7.1
+   pos.y = 1
+
+   local j = 1
+   for i,guid in ipairs(gameModel.players[color].actionCards) do
+       local obj = getObjectFromGUID(guid)
+       if isInHand(obj, color) == false then
+           obj.setRotation({x=0, y=180, z=0})
+           obj.setPosition(pos)
+           pos.x = pos.x + 2
+           pos.y = pos.y + 0.01
+           j = j + 1
+       end
+
+       if j > 10 then
+           j = 1
+           pos.z = pos.z - 6.1
+           pos.x = caravanCard.getPosition().x - 6
+       end
+   end
+end
+
+function movePlayingIndicator(color)
+   local pawn = getObjectFromGUID(keys.playingIndicator)
+   local playerCard = getObjectFromGUID(keys.caravanCards[color])
+   local position = playerCard.getPosition()
+   local transform = playerCard.getTransformForward()
+   position.z = position.z - transform.z * 7
+
+   pawn.setColorTint(color)
+   pawn.setPositionSmooth(position, false, false)
+end
+
+function tallyScore(playerColor)
+   local scoreText = getObjectFromGUID(keys.scores[playerColor])
+   local sum = gameModel.players[playerColor].score
+   local cubes = getPlayerCubes(playerColor):count()
+   cubes.yellow = 0;
+   sum = sum + cubes:sum()
+
+   scoreText.setValue("" .. sum)
+   return sum
+end
+
+function endTurnCleanup()
+    gameModel.state = "paused"
+
+    -- updateScore
+    tallyScore(gameModel.currentPlayer)
+
+    -- remove all buttons on point cards
+    for i, card in ipairs(getPointCards()) do
+       local buttons = card.getButtons()
+       if buttons ~= nil then
+           card.removeButton(0);
+       end
+    end
+
+    -- remove all buttons on action cards except the first
+    for i, card in ipairs(getActionCards()) do
+       local buttons = card.getButtons()
+       if i~= 1 and buttons ~= nil then
+           card.removeButton(0);
+       end
+    end
+
+    -- check for end game condition
+    if #gameModel.players[gameModel.currentPlayer].pointCards >= gameModel.victoryCondition then
+       gameModel.lastRound = true;
+    end
+
+    if gameModel.lastRound then
+       local lastPlayer = gameModel.turns[gameModel.numPlayers]
+       if gameModel.currentPlayer == lastPlayer then
+           broadcastToAll("game over")
+           gameModel.state = "game_over"
+           distributeRibbons()
+       else
+           showLastTurn()
+           broadcastToAll("last turn")
+       end
+    end
+end
+
+function startTurn(color)
+   log("Start Turn " .. color)
+   if gameModel.state == "game_over" then
+       return
+   end
+
+   color = color or gameModel.currentPlayer -- debug to restart turn
+
+   gameModel.currentPlayer = color
+   gameModel.state = "ready"
+   local message = color .. " Player's Turn "
+   broadcastToAll(message, color)
+   movePlayingIndicator(color)
+   gameModel.paidIndex = 0
+
+   setupTakeButtons()
+   incrementDebugPlayer()
+
+   function watch()
+       return getObjectFromGUID(keys.playingIndicator).getVelocity().x == 0
+   end
+
+   Wait.time(function() Wait.condition(idle, watch, 3, idle) end, 0.25)
+end
+
+function setupTakeButtons()
+    -- if the current player has the cubes to purchase a points card, add a button
+    for i, card in ipairs(getPointCards()) do
+        local cost = CubeCount:new(card.getTable("model").cost)
+        local playerCubes = getPlayerCubes(gameModel.currentPlayer)
+
+        if playerCubes:has(cost) then
+            addTakeButton(card, "takePointCard");
+        end
+    end
+
+    -- add a button to the first card
+    for i = 1, gameModel.paidIndex + 1 do
+        addTakeButton(getActionCards()[i], "takeActionCard")
+    end
+end
+
+function incrementDebugPlayer()
+    if #Player.getPlayers() == 1 and gameModel.players[gameModel.currentPlayer].bot == false then
+        Player.getPlayers()[1].changeColor(gameModel.currentPlayer)
+    end
+end
+
+-- start dealing from position 1
+-- only use for first propagate the board
+-- type {"actionCards", "pointCards"}
+-- callback, function to call when all cards are dealt
+function dealCards(deckType, callback)
+   getObjectFromGUID(keys[deckType]).randomize();
+   dealNextCard(deckType, 1, callback)
+end
+
+-- deal a single card from the deck of 'type'
+-- invoke 'callback when done'
+-- this will recurse index + 1 until all empty locations are filled
+-- type {"actionCards", "pointCards"}
+function dealNextCard(deckType, index, callback)
+   --callback = callback or function() end
+   local scriptingZoneName = deckType .. "ScriptingZone"
+   local max = #keys[deckType];
+   local zone = getObjectFromGUID(keys[scriptingZoneName][index])
+
+   if zone == nil then
+       if callback ~= nil then callback() end
+       return
+   end
+
+   local parameters = {
+       position = zone.getPosition(),
+       flip = true,
+       index = 0,
+       callback_function = function(card)
+           Wait.time(function() card.setLock(true) end, 0.5)
+           nextIndex = index + 1;
+           dealNextCard(deckType, nextIndex, callback)
+       end
+   }
+
+   local deck = getObjectAt(loc.decks[deckType], "deck")
+
+   local card = nil
+   if deck == nil then
+       card = getObjectAt(loc.decks[deckType], "card")
+       if card ~= nil then
+           card.flip()
+           card.setPosition(zone.getPosition(), false, false)
+           card.setLock(true)
+       end
+       Wait.time(callback, 0.5) -- moving cards left expects dealing to be done
+   else
+       card = deck.takeObject(parameters);
+   end
+
+   if card ~= nil then card.setVar("index", index) end
+end
+
+function quickAction(playerColor)
+   if gameModel.currentPlayer ~= playerColor then return end
+
+   if gameModel.active.action == "promote" then
+       local cubes = cubesUnderMouse(playerColor)
+       if #cubes == 0 then return end
+       if #cubes > gameModel.active.value then return end
+       quickPromote(cubes, playerColor)
+   elseif gameModel.active.action == "exchange" then
+       quickExchange(playerColor)
+   end
+end
+
+function quickExchange(playerColor)
+   local from = gameModel.active.value.from
+   if getPlayerCubes(gameModel.currentPlayer):has(from) == false then return end
+   local cubes = getPlayerCubes(gameModel.currentPlayer):subset(from)
+   doExchange(cubes, playerColor)
+end
+
+function quickPromote(cubes, playerColor)
+   function cb()
+       if gameModel.active.value == 0 then
+           passTurn(playerColor)
+       else
+           idle()
+       end
+   end
+
+   if gameModel.state == "promote" then
+       doPromote(cubes, cb)
+   end
+end
+
+function setupRestButton(color)
+   local playerCard = getObjectFromGUID(keys.caravanCards[color])
+
+   parameters = {
+       click_function = "rest",
+       label = "R",
+       position = {0.8, 1.0, 0.9},
+       scale = {1, 1, 1},
+       width = 200,
+       height = 300,
+       font_size = 150,
+       color = {1, 1, 1},
+       tooltip = "Rest and/or\nPickup Cards"
+   }
+
+   playerCard.createButton(parameters)
+end
+
+function getSpentCards(playerColor)
+   r = {}
+   for i,o in ipairs(getAllObjects()) do
+       if isClass(o, "card") == false then goto continue end
+       if isClass(o, "action") == false then goto continue end
+       if o.getVar("state") ~= "spent" then goto continue end
+       if o.getVar("owner") ~= playerColor then goto continue end
+
+       table.insert(r, o)
+
+       ::continue::
+   end
+   return r
+end
+
+function rest(obj, playerColor)
+   local player = Player[gameModel.currentPlayer]
+   if gameModel.currentPlayer ~= playerColor then return end
+
+   if gameModel.state == "promote" or gameModel.state == "exchange" then
+       local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+       local msg = playerName .. " rests"
+       broadcastToAll(msg, gameModel.currentPlayer)
+       passTurn(playerColor)
+       return
+   end
+
+   if gameModel.state == "ready" then
+       local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+       local msg = playerName .. " picks up cards and rests"
+       broadcastToAll(msg, gameModel.currentPlayer)
+       for i,o in ipairs(getAllObjects()) do
+           if o.getVar("owner") == playerColor then
+               if isClass(o, "card") and isClass(o, "action") then
+                   moveCardToHand(o, playerColor)
+               end
+           end
+       end
+       passTurn(playerColor)
+   end
+
+   if gameModel.state == "discard" then
+       passTurn(playerColor)
+   end
+end
+
+function addTakeButton(card, functionName)
+   if card == nil then return end
+   if card.getButtons() ~= nil then return end
+
+   parameters = {
+       click_function = functionName,
+       label = "Take",
+       position = {0, 0.5, 1.75},
+       scale = {2, 1, 2},
+       width = 500,
+       height = 125,
+       font_size = 120,
+       color = {0.9, 0.1, 0.1}
+   }
+
+   card.createButton(parameters);
+   return card.getButtons()[1]
+end
+
+function moveCardToHand(card, playerColor)
+   card.setLock(false);
+   local player = Player[playerColor];
+   local hand = player.getHandTransform(1);
+   card.setPositionSmooth(hand.position, false, true);
+   local rotation = hand.rotation
+   rotation.y = (rotation.y + 180) % 360
+   card.setRotation(rotation)
+   card.call("resetState")
+   card.setVar("state", "ready") -- bug quasher
+end
+
+function takeActionCard(card, playerColor)
+    if playerColor ~= gameModel.currentPlayer then return end
+    if gameModel.state ~= "ready" and gameModel.state ~= "taking_action" then return end
+    cb = cb or function() end
+
+    if card.getButtons() ~= nil then card.removeButton(0) end
+    card.setLock(false)
+
+    moveCardToHand(card, playerColor)
+    collectActionCubes(playerColor, card.getVar("index"));
+    card.setVar("ready", true)
+
+    local index = card.getVar("index");
+    for i = index, #keys["actionCardsScriptingZone"] - 1 do moveCardLeft("actionCards", i+1) end
+    for i = index, #keys["actionCardsScriptingZone"] - 1 do moveCubesLeft(i+1) end
+    dealNextCard("actionCards", #keys["actionCardsScriptingZone"], function() passTurn(playerColor) end);
+
+    card.setVar("owner", playerColor)
+    t = gameModel.players[playerColor].actionCards
+    table.insert(t, card.getGUID())
+end
+
+function takePointCard(card, playerColor)
+    if playerColor ~= gameModel.currentPlayer then return end
+    if gameModel.state ~= "ready" then return end
+
+    local index = card.getVar("index");
+    local cost = CubeCount:new(card.getTable("model").cost);
+    local cubes = getPlayerCubes(gameModel.currentPlayer)
+
+    if cubes:has(cost) then
+       cubes:subset(cost):destruct()
+    else
+       return
+    end
+
+    if card.getButtons() ~= nil then card.removeButton(0) end
+    card.setLock(false)
+    placeCardBesideCaravan(card, playerColor)
+
+    local value = card.getTable("model").value
+    gameModel.players[playerColor].score = gameModel.players[playerColor].score + value
+
+    if index == 1 or index == 2 then
+       collectCoins(playerColor, index)
+    end
+
+    for i = index, #keys["pointCardsScriptingZone"] - 1 do moveCardLeft("pointCards", i+1) end
+    dealNextCard("pointCards", #keys["pointCardsScriptingZone"], function() passTurn(playerColor) end);
+
+    card.setVar("owner", playerColor)
+    t = gameModel.players[playerColor].pointCards
+    table.insert(t, card.getGUID())
+end
+
+function placeCardBesideCaravan(card, playerColor)
+    -- place the card beside the spice board
+    local hand = Player[playerColor].getHandTransform(1)
+    local playerCard = getObjectFromGUID(keys.caravanCards[playerColor]);
+
+    local d = 9;
+    local rPos = playerCard.getTransformRight();
+    local cPos = playerCard.getPosition();
+
+    local nPos = {
+        x = cPos.x - rPos.x * d,
+        y = cPos.y - rPos.y * d,
+        z = cPos.z - rPos.z * d
+    }
+
+    nPos.x = nPos.x + (#gameModel.players[playerColor].pointCards * 0.5)
+    nPos.z = nPos.z + (#gameModel.players[playerColor].pointCards * -0.5)
+
+    card.setPositionSmooth(nPos, false, false);
+    local rotation = hand.rotation
+    rotation.y = (rotation.y + 180) % 360
+    card.setRotation(rotation);
+end
+
+-- playerColor: only pass turn if the current player = playerColor
+function passTurn(playerColor)
+   log("passTurn " .. playerColor .. " " .. gameModel.currentPlayer)
+   if gameModel.currentPlayer ~= playerColor then return end
+
+   clearActive()
+   endTurnCleanup()
+
+   Wait.frames(
+      function()
+           local c = getPlayerCubes(gameModel.currentPlayer):sum()
+
+           if (c > 10) then
+               gameModel.state = "discard"
+               local message = "Player must discard cubes"
+               broadcastToAll(message)
+               idle()
+           else
+               startTurn(gameModel.nextPlayer[gameModel.currentPlayer])
+           end
+       end
+   ,1)
+end
+
+-- retrieve the object at position if the object is of 'class'
+-- if class is nil return any object at position
+-- returns nil if no object there
+-- returns first object at position if muliple are at position
+function getObjectAt(pos, class, sz)
+   sz = sz or 2
+
+   local tab = {
+       origin = {pos.x, 0, pos.z},
+       direction = {0, 1, 0},
+       max_distance = 20,
+       type = 1,
+       size = {sz, sz, sz}
+   }
+
+   local hit = Physics.cast(tab)
+
+   if (hit == nil) then return nil end
+
+   if class ~= nil then
+       for i,o in ipairs(hit) do
+           if isClass(o.hit_object, class) then return o.hit_object end
+       end
+   else
+       return hit[1].hit_object
+   end
+
+   return nil
+end
+
+-- move a single card of the given type left 1 space
+function moveCardLeft(deckType, from)
+   local to = from - 1;
+   local scriptingZoneName = deckType .. "ScriptingZone"
+   local fromZone = getObjectFromGUID(keys[scriptingZoneName][from])
+   local toZone = getObjectFromGUID(keys[scriptingZoneName][to])
+
+   local card = getObjectsByClass(fromZone, "card")[1]
+   local position = toZone.getPosition()
+
+   if card ~= nil then
+       card.setLock(false)
+       card.setPositionSmooth(position, false, false)
+       card.setVar("index", to);
+       Wait.time(function() card.setLock(true) end, 1)
+   end
+end
+
+-- move all cubes left 1 space
+function moveCubesLeft(from)
+   local to = from - 1;
+   local zoneFrom = getObjectFromGUID(keys.actionCardsScriptingZone[from]);
+   local zoneTo = getObjectFromGUID(keys.actionCardsScriptingZone[to]);
+
+   local delta = zoneFrom.getPosition().x - zoneTo.getPosition().x
+
+   for i, obj in ipairs(zoneFrom.getObjects()) do
+       if isClass(obj, "cube") then
+           local position = obj.getPosition()
+           position.x = position.x - delta;
+           obj.setPositionSmooth(position, false, false)
+       end
+   end
+end
+
+function sortActionCubes(zone, cube)
+   local pos = zone.getPosition()
+   local sca = zone.getScale()
+
+   local left = pos.x + 0.5 * sca.x
+   local top = pos.z + 0.5 * sca.z
+
+   local cubes = getObjectsByClass(zone, "cube")
+   table.insert(cubes, cube)
+
+   for i,o in ipairs(cubes) do
+       sz = o.getBounds().size
+       top = top - sz.z - 0.2
+       o.setPositionSmooth({left - sz.x, 2.3, top})
+   end
+end
+
+function checkCubeEnterScriptingZone(zone, cube)
+   if cube.getVar("owner") == nil then return true end
+
+   if gameModel.state ~= "ready" then
+       if gameModel.state ~= "taking_action" then return false end
+   end
+
+   if isClass(cube, "cube") == false then return false end
+   if cube.getVar("owner") ~= gameModel.currentPlayer then return false end;
+   if zone.getVar("index") == gameModel.paidIndex + 1 then return true end
+   return false
+end
+
+-- handle paying for action cards
+function onCubeEnterScriptingZone(zone, cube)
+   if cube.getVar("owner") == nil or cube.getVar("owner") == "" then
+       return
+   end
+
+   if checkCubeEnterScriptingZone(zone, cube) then
+       gameModel.paidIndex = zone.getVar("index")
+       addTakeButton(getActionCards()[zone.getVar("index") + 1], "takeActionCard")
+       cubeSetOwner(cube, nil)
+       gameModel.state = "taking_action"
+       sortActionCubes(zone, cube)
+   end
+end
+
+-- obj: an object with snap points
+-- for all snappoints on 'obj',
+-- return all snappoints positions which do not have a nearby cube
+function getFreeSnapPoints(obj)
+   local freePoints = {};
+
+   for i, s in ipairs(obj.getSnapPoints()) do
+       local p = obj.positionToWorld(s.position)
+       if getObjectAt(p, "cube", 1) == nil then
+           freePoints[#freePoints + 1] = p
+       end
+   end
+
+   return freePoints;
+end
+
+-- return true if the object contains a 'type' var and the 'type' var contains
+-- the 'type' string
+function isClass(object, class)
+   if class == nil then return true end
+   local modelClass = object.getVar("modelClass")
+   if type(modelClass) ~= "string" then return false end
+
+   for i in string.gmatch(modelClass, "%S+") do
+      if i == class then return true end
+   end
+
+   return false
+end
+
+function addClass(object, className)
+   if object == nil then return false end
+   local modelClass = object.getVar("modelClass")
+   if modelClass == nil then modelClass = "" end
+   local newModel = modelClass .. " " .. className
+   object.setVar("modelClass", newModel)
+   return true
+end
+
+function getObjectsByClass(container, class)
+   if container == nil then return end
+   r = {}
+
+   local objects = container.getObjects()
+
+   for i, object in ipairs(objects) do
+       if isClass(object, class) then
+           table.insert(r, object)
+       end
+   end
+   return r
+end
+
+-- return true is object is in the hand of player color
+function isInHand(object, color)
+   local handObjects = getPlayableCards(color)
+   for index, handObject in ipairs(handObjects) do
+       if (handObject == object) then
+            return true
+        end
+   end
+   return false
+end
+
+-- turn autodrop on/off
+-- will add context menu items, that won't be removed
+function toggleDev(color)
+   if gameModel.players[color].dev == true then
+       gameModel.players[color].dev = false
+   else
+       gameModel.players[color].dev = true
+       addContextMenuItem("Start Bot", startBot)
+       addContextMenuItem("Bot Action", botAction)
+   end
+end
+
+function getPlayableCards(color)
+   r = {}
+   local handObjects = Player[color].getHandObjects();
+   for i,card in ipairs(handObjects) do
+       if isClass("action") then table.insert(r, card) end
+   end
+   return r
+end
+
+function indexOf(table, value)
+   for i,v in pairs(table) do
+       if v == value then return i end
+   end
+   return nil
+end
+
+-- trigger when the current action has completed
+-- used for bot automation
+function idle()
+    log("----- IDLE " .. gameModel.currentPlayer .. " -----")
+    if bots[gameModel.currentPlayer] == nil then return end
+    local bot = bots[gameModel.currentPlayer]
+
+    local startTime = os.clock()
+    local action = bot:getAction()
+    log(action)
+    if action ~= nil then bot:doAction(action) end
+    log("Action Time :" .. os.clock() - startTime)
+end
+
+-- remove a player from the game turn rotation
+function removePlayer(color)
+    if gameModel.currentPlayer == color then
+        clearActive()
+        endTurnCleanup()
+        startTurn(gameModel.nextPlayer[color])
+    end
+
+    local newTurns = {}
+    for i = 1, #gameModel.turns do
+        if gameModel.turns[i] ~= color then
+            newTurns[#newTurns + 1] = gameModel.turns[i]
+        end
+    end
+    gameModel.turns = newTurns;
+    setupTurns(#gameModel.turns)
+end
