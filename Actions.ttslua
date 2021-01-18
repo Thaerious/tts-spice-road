@@ -14,7 +14,6 @@ end
 -- if both conditions are true:
 -- perform the exchange using the cubes on the action card
 function exchangeCube(cube, playerColor)
-   
    local card = getObjectFromGUID(gameModel.active.guid)
    local cubes = getCubesOn(card, 1.5)
    local from = gameModel.active.value.from
@@ -26,10 +25,6 @@ function exchangeCube(cube, playerColor)
            return
        end
    end
-
-   -- todo remove next two lines
-   --if gameModel.state == "paused" then return end
-   --gameModel.state = "paused"
 
    if cubes:has(from) then
       doExchange(cubes, playerColor)
@@ -47,6 +42,7 @@ function doExchange(cubes, playerColor, cb)
 
    if (cubes:has(from) == false) then return end
    card.setVar("state", "spent");
+   gameModel.state = "exchange"
    cubes:subset(from):destruct()
 
    local playerName = Player[gameModel.currentPlayer].steam_name or "?"
@@ -89,6 +85,7 @@ function promoteAct(card, playerColor)
    end)
    moveCubesToPlayerCard(playerColor, newCubes)
    card.setVar("state", "spent");
+   gameModel.state = "promote"
 end
 
 -- cubes: cube collection

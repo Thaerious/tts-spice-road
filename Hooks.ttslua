@@ -82,6 +82,12 @@ function onObjectEnterScriptingZone(zone, obj)
     end
 end
 
+function onObjectLeaveScriptingZone(zone, obj)
+    if isClass(zone, "actionCards") and isClass(obj, "cube") then
+        onCubeLeaveScriptingZone(zone, obj) -- un pay for action card
+    end
+end
+
 -- prevent players from messing with objects that aren't theirs
 function onObjectPickUp(color, obj)
     if color == "Black" then return end
@@ -100,17 +106,14 @@ end
 
 -- trigger playCard when a valid action card is dropped
 function onObjectDrop(color, card)
-    if color ~= gameModel.currentPlayer then return end
-
     if isClass(card, "card") == false then return end
     if isClass(card, "action") == false then return end
-    if card.getVar("state") == "spent" then return end
 
-    -- do not process if the card was dropped into the hand
-    if isInHand(card, color) == false then
+    if isInHand(card, color) == false and card.getVar("state") ~= "spent" and color == gameModel.currentPlayer then
         card.registerCollisions()
-    else
+    elseif isInHand(card, color) == true then
         card.unregisterCollisions()
+        card.call("resetState")
     end
 end
 

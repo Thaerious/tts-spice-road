@@ -1,0 +1,150 @@
+-- handle paying for action cards
+function onCubeEnterScriptingZone(zone, cube)
+   if cube.getVar("owner") ~= gameModel.currentPlayer then
+       return
+   end
+
+   function watch()
+       return cube.getVelocity().x == 0
+   end
+
+   function onCondition()
+       updateAllButtons()
+       sortActionCubes(zone, cube)
+   end
+
+   Wait.condition(onCondition, watch, 3, onCondition)
+end
+
+function onCubeLeaveScriptingZone(zone, cube)
+    updateAllButtons()
+end
+
+function sortActionCubes(zone, cube)
+   local pos = zone.getPosition()
+   local sca = zone.getScale()
+
+   local left = pos.x + 0.5 * sca.x
+   local top = pos.z + 0.5 * sca.z
+
+   local cubes = getObjectsByClass(zone, "cube")
+   table.insert(cubes, cube)
+
+   for i,o in ipairs(cubes) do
+       sz = o.getBounds().size
+       top = top - sz.z - 0.2
+       o.setPositionSmooth({left - sz.x, 2.3, top})
+   end
+end
+
+function removeActionCardButtons()
+    for i, card in ipairs(getActionCards()) do
+       local buttons = card.getButtons()
+       if i~= 1 and buttons ~= nil then
+           card.removeButton(0);
+       end
+    end
+end
+
+-- check all cards to ensure they have a cube owned by player
+function updateAllButtons()
+    removeActionCardButtons()
+    local actionCards = getActionCards()
+
+    local flagFound = true
+    for i = 1, #actionCards do
+        if flagFound == false then return end
+        flagFound = false
+
+        if (i < 6) then actionCards[i + 1].clearButtons() end
+        local zone = getObjectFromGUID(keys.actionCardsScriptingZone[i])
+        local cubes = getObjectsByClass(zone, "cube")
+        for j = 1, #cubes do
+            if cubes[j].getVar("owner") == gameModel.currentPlayer then
+                if (i < 6) then addTakeButton(actionCards[i + 1], "takeActionCard") end
+                flagFound = true
+            end
+        end
+    end
+end
+
+function checkCubeEnterScriptingZone(zone, cube)
+   if cube.getVar("owner") == nil then return true end
+
+   if gameModel.state ~= "ready" then return false end
+
+   if isClass(cube, "cube") == false then return false end
+   if cube.getVar("owner") ~= gameModel.currentPlayer then return false end;
+   if zone.getVar("index") == gameModel.paidIndex + 1 then return true end
+   return false
+end
+
+-- remove ownership on all cubes on all buyable action cards
+function clearCubeOwners()
+    local actionCards = getActionCards()
+
+    for i = 1, #actionCards do
+        local cubes = getCubesOn(actionCards[i])
+        for j = 1, #cubes do
+            cubeSetOwner(cubes[i], nil)
+        end
+    end
+end
+
+function takeActionCard(card, playerColor)
+    if playerColor ~= gameModel.currentPlayer then return end
+    if gameModel.state ~= "ready" and gameModel.state ~= "taking_action" then return end
+    cb = cb or function() end
+
+    if card.getButtons() ~= nil then card.removeButton(0) end
+    clearCubeOwners()
+    card.setLock(false)
+
+    moveCardToHand(card, playerColor)
+    collectActionCubes(playerColor, card.getVar("index"));
+    card.setVar("ready", true)
+
+    local index = card.getVar("index");
+    for i = index, #keys["actionCardsScriptingZone"] - 1 do moveCardLeft("actionCards", i+1) end
+    for i = index, #keys["actionCardsScriptingZone"] - 1 do moveCubesLeft(i+1) end
+    dealNextCard("actionCards", #keys["actionCardsScriptingZone"], function() passTurn(playerColor) end);
+
+    card.setVar("owner", playerColor)
+
+    --update game model
+    t = gameModel.players[playerColor].actionCards
+    table.insert(t, card.getGUID())
+end
+
+function takePointCard(card, playerColor)
+    if playerColor ~= gameModel.currentPlayer then return end
+    if gameModel.state ~= "ready" then return end
+
+    local index = card.getVar("index");
+    local cost = CubeCount:new(card.getTable("model").cost);
+    local cubes = getPlayerCubes(gameModel.currentPlayer)
+
+    if cubes:has(cost) then
+       cubes:subset(cost):destruct()
+    else
+       return
+    end
+
+    if card.getButtons() ~= nil then card.removeButton(0) end
+    card.setLock(false)
+    placeCardBesideCaravan(card, playerColor)
+
+    local value = card.getTable("model").value
+    gameModel.players[playerColor].score = gameModel.players[playerColor].score + value
+
+    if index == 1 or index == 2 then
+       collectCoins(playerColor, index)
+    end
+
+    for i = index, #keys["pointCardsScriptingZone"] - 1 do moveCardLeft("pointCards", i+1) end
+    dealNextCard("pointCards", #keys["pointCardsScriptingZone"], function() passTurn(playerColor) end);
+
+    card.setVar("owner", playerColor)
+    t = gameModel.players[playerColor].pointCards
+    table.insert(t, card.getGUID())
+end

@@ -35,10 +35,9 @@ end
 function addQuickTakeButton(card, functionName)
    if card == nil then return end
    if card.getButtons() ~= nil then return end
-   log(card.getButtons())
 
    if globalLastQTake ~= nil then
-       gclearHover()
+       clearHover()
    end
 
    parameters = {
