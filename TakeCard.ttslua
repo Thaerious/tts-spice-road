@@ -9,7 +9,7 @@ function onCubeEnterScriptingZone(zone, cube)
    end
 
    function onCondition()
-       updateAllButtons()
+       evaluateActionTakeButtons()
        sortActionCubes(zone, cube)
    end
 
@@ -17,7 +17,7 @@ function onCubeEnterScriptingZone(zone, cube)
 end
 
 function onCubeLeaveScriptingZone(zone, cube)
-    updateAllButtons()
+    evaluateActionTakeButtons()
 end
 
 function sortActionCubes(zone, cube)
@@ -37,36 +37,68 @@ function sortActionCubes(zone, cube)
    end
 end
 
-function removeActionCardButtons()
+function removeActionCardButtons(cb)
+    cb = cb or function() end
+
     for i, card in ipairs(getActionCards()) do
-       local buttons = card.getButtons()
-       if i ~= 1 and buttons ~= nil then
-           card.removeButton(0);
-       end
+        removeButtons(card, keys.labels.takeButton)
     end
+
+    Wait.frames(cb, 2)
 end
 
 -- check all cards to ensure they have a cube owned by player
-function updateAllButtons()
-    removeActionCardButtons()
-    local actionCards = getActionCards()
-    if #actionCards <= 1 then return end
+function evaluateActionTakeButtons()
+    removeActionCardButtons(function()
+        local actionCards = getActionCards()
+        if #actionCards <= 1 then return end
 
-    local flagFound = true
-    for i = 1, #actionCards do
-        if flagFound == false then return end
-        flagFound = false
+        if #actionCards >= 1 then
+            addTakeButton(actionCards[1], "takeActionCard")
+        end
 
-        if (i < 6) then actionCards[i + 1].clearButtons() end
-        local zone = getObjectFromGUID(keys.actionCardsScriptingZone[i])
-        local cubes = getObjectsByClass(zone, "cube")
-        for j = 1, #cubes do
-            if cubes[j].getVar("owner") == gameModel.currentPlayer then
-                if (i < 6) then addTakeButton(actionCards[i + 1], "takeActionCard") end
-                flagFound = true
+        local flagFound = true
+        for i = 1, #actionCards do
+            if flagFound == false then return end
+            flagFound = false
+
+            local zone = getObjectFromGUID(keys.actionCardsScriptingZone[i])
+            local cubes = getObjectsByClass(zone, "cube")
+            for j = 1, #cubes do
+                if cubes[j].getVar("owner") == gameModel.currentPlayer then
+                    if (i < 6) then addTakeButton(actionCards[i + 1], "takeActionCard") end
+                    flagFound = true
+                end
+            end
+        end
+    end, 2)
+end
+
+function evaluatePointTakeButtons()
+    local function onDelay()
+        -- if the current player has the cubes to purchase a points card, add a button
+        for i, card in ipairs(getPointCards()) do
+            local cost = CubeCount:new(card.getTable("model").cost)
+            local playerCubes = getPlayerCubes(gameModel.currentPlayer)
+
+            if gameModel.state ~= "ready" or playerCubes:has(cost) == false then
+                removeButtons(card, keys.labels.takeButton)
+            else
+                addTakeButton(card, "takePointCard");
             end
         end
     end
+    Wait.frames(onDelay, 2)
+end
+
+function removeAllPointTakeButtons(cb)
+    cb = cb or function() end
+
+    for i, card in ipairs(getPointCards()) do
+        removeButtons(card, keys.labels.takeButton)
+    end
+
+    Wait.frames(cb, 2)
 end
 
 function checkCubeEnterScriptingZone(zone, cube)
@@ -82,7 +114,6 @@ end
 
 -- remove ownership on all cubes on all buyable action cards
 function clearCubeOwners()
-    log("clearCubeOwners")
     local actionCards = getActionCards()
 
     for i = 1, #actionCards do
@@ -96,10 +127,10 @@ end
 function takeActionCard(card, playerColor)
     if playerColor ~= gameModel.currentPlayer then return end
     if gameModel.state ~= "ready" and gameModel.state ~= "taking_action_card" then return end
-    gameModel.state = "taking_action_card"
+    setState("taking_action_card")
     cb = cb or function() end
 
-    if card.getButtons() ~= nil then card.removeButton(0) end
+    removeButtons(card, "Take")
     clearCubeOwners()
     card.setLock(false)
 
@@ -153,20 +184,20 @@ function takePointCard(card, playerColor)
 end
 
 function addTakeButton(card, functionName)
-   if card == nil then return end
-   --if card.getButtons() ~= nil then return end
+    if card == nil then return end
+    if hasButton(card, keys.labels.takeButton) then return end
 
-   parameters = {
+    parameters = {
        click_function = functionName,
-       label = "Take",
+       label = keys.labels.takeButton,
        position = {0, 0.5, 1.65},
        scale = {2.5, 1, 2},
        width = 500,
        height = 125,
        font_size = 120,
        color = {0.9, 0.1, 0.1}
-   }
+    }
 
-   card.createButton(parameters);
-   return card.getButtons()[1]
+    card.createButton(parameters);
+    return card.getButtons()[1]
 end

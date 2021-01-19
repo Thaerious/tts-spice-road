@@ -1,0 +1,140 @@
+
+function setState(state)
+    if gameModel.state == state then return end
+    gameModel.state = state
+
+    log("setState: " .. state)
+
+    if state == "ready" then
+        evaluatePointTakeButtons()
+        evaluateActionTakeButtons()
+    else
+        removeAllPointTakeButtons()
+        removeActionCardButtons()
+    end
+end
+
+function startTurn(color)
+   log("Start Turn: " .. color)
+   if gameModel.state == "game_over" then
+       return
+   end
+
+   color = color or gameModel.currentPlayer -- debug to restart turn
+
+   gameModel.currentPlayer = color
+   setState("ready")
+   local message = color .. " Player's Turn "
+   broadcastToAll(message, color)
+   movePlayingIndicator(color)
+   gameModel.paidIndex = 0
+
+   evaluatePointTakeButtons()
+   evaluateActionTakeButtons()
+   incrementDebugPlayer()
+
+   function watch()
+       return getObjectFromGUID(keys.playingIndicator).getVelocity().x == 0
+   end
+
+   Wait.time(function() Wait.condition(idle, watch, 3, idle) end, 0.25)
+end
+
+function endTurnCleanup()
+    setState("paused")
+
+    tallyScore(gameModel.currentPlayer)
+    removeAllPointTakeButtons()
+    removeActionCardButtons()
+    clearCubeOwners()
+
+    -- check for end game condition
+    if #gameModel.players[gameModel.currentPlayer].pointCards >= gameModel.victoryCondition then
+       gameModel.lastRound = true;
+    end
+
+    if gameModel.lastRound then
+       local lastPlayer = gameModel.turns[gameModel.numPlayers]
+       if gameModel.currentPlayer == lastPlayer then
+           broadcastToAll("game over")
+           setState("game_over")
+           distributeRibbons()
+       else
+           showLastTurn()
+           broadcastToAll("last turn")
+       end
+    end
+end
+
+-- shows the last turn notification
+function showLastTurn()
+    local text = getObjectFromGUID(keys.centerText)
+    local pos = text.getPosition()
+
+    pos.y = 2.0;
+    text.setScale({2, 1.5, 1.5})
+    text.setPosition(pos)
+
+    Wait.time(function() showLastTurnStep(1) end, 0.25)
+end
+
+function showLastTurnStep(i)
+    local text = getObjectFromGUID(keys.centerText)
+    local scale = text.getScale()
+    local pos = text.getPosition()
+    local rot = text.getPosition()
+
+    if i <= 10 then
+        scale.x = scale.x + 0.1
+        pos.y = pos.y + 1
+        text.setScale(scale)
+        text.setPosition(pos)
+        Wait.time(function() showLastTurnStep(i + 1) end, 0.03)
+    elseif i <= 20 then
+        if i % 2 == 1 then rot.y = 5
+        else rot.y = -5 end
+        rot.x = 90
+        text.setRotation(rot)
+        Wait.time(function() showLastTurnStep(i + 1) end, 0.07)
+    elseif i <= 30 then
+        scale.x = scale.x - 0.1
+        pos.y = pos.y - 1
+        text.setRotation({x = 90, y = 0, z = 0})
+        text.setScale(scale)
+        text.setPosition(pos)
+        Wait.time(function() showLastTurnStep(i + 1) end, 0.03)
+    end
+end
+
+-- put ribbons in front of winning players
+function distributeRibbons()
+    local scores = {}
+    for i = 1,gameModel.numPlayers do
+        table.insert(scores, 1, {color = gameModel.turns[i], score = tallyScore(gameModel.turns[i])})
+    end
+
+    for i = 1,gameModel.numPlayers do
+        for j = 1,(gameModel.numPlayers - 1) do
+            if scores[j].score < scores[j+1].score then
+                local temp = scores[j+1]
+                scores[j+1] = scores[j]
+                scores[j] = temp
+            end
+        end
+    end
+
+    for i,score in ipairs(scores) do
+        if (i <= 3) then
+            local caravan = getObjectFromGUID(keys.caravanCards[score.color])
+            local ribbon = getObjectFromGUID(keys.ribbons[i])
+            local pos = caravan.getPosition()
+            pos.y = 3
+            ribbon.setPosition(pos)
+
+            local rot = caravan.getRotation()
+            rot.x = 20
+            ribbon.setRotation(rot)
+
+        end
+    end
+end

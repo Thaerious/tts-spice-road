@@ -1,5 +1,5 @@
 DEBUG_PLAYER_COUNT = 3
-    
+
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad(saved_data)
     getObjectFromGUID(keys.playingIndicator).registerCollisions()
@@ -50,7 +50,8 @@ function loadSavedData()
         end
     end
 
-    setupTakeButtons()
+    evaluatePointTakeButtons()
+    evaluateActionTakeButtons()
     incrementDebugPlayer()
 end
 
@@ -160,6 +161,24 @@ function setupCaravanCards()
         end
     end
 
+end
+
+function setupRestButton(color)
+   local playerCard = getObjectFromGUID(keys.caravanCards[color])
+
+   parameters = {
+       click_function = "rest",
+       label = "R",
+       position = {0.8, 1.0, 0.9},
+       scale = {1, 1, 1},
+       width = 200,
+       height = 300,
+       font_size = 150,
+       color = {1, 1, 1},
+       tooltip = "Rest and/or\nPickup Cards"
+   }
+
+   playerCard.createButton(parameters)
 end
 
 -- setup the turn order for 'n' participants

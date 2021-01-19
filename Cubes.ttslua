@@ -159,9 +159,11 @@ function cubeSetOwner(cube, playerColor)
     cube.setVar("owner", playerColor)
     if playerColor == nil then
         cube.setDescription("No Owner")
+        cube.setDescription("No Owner")
     else
         cube.setDescription("Owner: " .. playerColor)
     end
+     evaluatePointTakeButtons()
 end
 
 -- owner: the color of the player to give the cubes to

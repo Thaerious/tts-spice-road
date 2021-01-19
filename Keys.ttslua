@@ -69,6 +69,10 @@ keys = {
         Red = "0026c0",
         Green = "516409",
         Blue = "6fd878"
+    },
+    labels = {
+        takeButton = "Take",
+        quickTakeButton = "Pay & Take"
     }
 }
 

@@ -18,6 +18,7 @@ function onObjectCollisionEnter(registeredObject, collisionInfo)
     -- cube collides with cube bag
     if isClass(registeredObject, "cubeBag") and isClass(collisionObject, "cube") then
         collisionObject.destruct()
+        evaluatePointTakeButtons()
         return
     end
 
@@ -33,7 +34,6 @@ function onObjectCollisionEnter(registeredObject, collisionInfo)
     -- when an action card collides
 
     if isClass(registeredObject, "card") then
-        log(registeredObject.getGUID() ~= gameModel.active.guid)
         if isActiveSpent() == false and registeredObject.getGUID() ~= gameModel.active.guid then
             setActive(registeredObject)
             if isClass(registeredObject, "collect") then collect() end

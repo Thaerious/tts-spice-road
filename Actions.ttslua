@@ -42,7 +42,7 @@ function doExchange(cubes, playerColor, cb)
 
    if (cubes:has(from) == false) then return end
    card.setVar("state", "spent");
-   gameModel.state = "exchange"
+   setState("exchange")
    cubes:subset(from):destruct()
 
    local playerName = Player[gameModel.currentPlayer].steam_name or "?"
@@ -83,9 +83,10 @@ function promoteAct(card, playerColor)
    local newCubes = doPromote(cubes, function()
       if gameModel.active.value == 0 then passTurn(playerColor) end
    end)
-   moveCubesToPlayerCard(playerColor, newCubes)
+
    card.setVar("state", "spent");
-   gameModel.state = "promote"
+   setState("promote")
+   moveCubesToPlayerCard(playerColor, newCubes)
 end
 
 -- cubes: cube collection
@@ -133,7 +134,6 @@ function collect()
    broadcastToAll(msg, gameModel.currentPlayer)
 
    card.unregisterCollisions()
-   gameModel.state = "paused" -- prevent plays during animation
    card.setVar("state", "spent");
 
    addCubesToPlayerCard(gameModel.currentPlayer, CubeCount:new(card.getTable("cubes")), function()
