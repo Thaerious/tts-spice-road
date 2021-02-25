@@ -127,7 +127,7 @@ end
 -- The card is considered played when it collides with something.
 -- see onObjectCollisionEnter in Hooks.ttslua
 function collect()
-    console.log("collect");
+   log("collect");
    local card = getObjectFromGUID(gameModel.active.guid)
    local player = Player[gameModel.currentPlayer]
    local cubes = card.getTable("cubes")

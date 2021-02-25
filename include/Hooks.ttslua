@@ -6,6 +6,7 @@ end
 
 -- check card collisions to automate actions
 function onObjectCollisionEnter(registeredObject, collisionInfo)
+    log("onObjectCollisionEnter " .. registeredObject.getGUID())
     if gameModel.state == "not_started" then return end
     local collisionObject = collisionInfo.collision_object
 
