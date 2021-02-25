@@ -123,8 +123,11 @@ function doPromote(cubes, cb)
    return newCubes
 end
 
---called when a action-collect card starts colliding (played)
+-- Called when an action-collect card is played.
+-- The card is considered played when it collides with something.
+-- see onObjectCollisionEnter in Hooks.ttslua
 function collect()
+    console.log("collect");
    local card = getObjectFromGUID(gameModel.active.guid)
    local player = Player[gameModel.currentPlayer]
    local cubes = card.getTable("cubes")
