@@ -5,10 +5,6 @@
 #include Startup
 #include Hooks
 #include Utility
-#include Bot
-#include T200
-#include test
-#include Bench
 #include Actions
 #include Coins
 #include UIcontrol
