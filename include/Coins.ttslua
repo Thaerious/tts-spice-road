@@ -1,0 +1,75 @@
+function getGoldCoin()
+   return getObjectAt(loc.coins.gold, "coin")
+end
+
+-- retrieve the object in the silver coin position
+-- not necessarily a gold coin
+function getSilverCoin()
+   return getObjectAt(loc.coins.silver, "coin")
+end
+
+function collectCoins(playerColor, index, cb)
+   local coin = nil
+   if index == 1 then coin = getGoldCoin()
+   else coin = getSilverCoin() end
+
+   if coin == nil then return end
+
+   -- place the coin beside the spice board
+   local playerCard = getObjectFromGUID(keys.caravanCards[playerColor]);
+   local d = 12;
+   local rPos = playerCard.getTransformRight();
+   local cPos = playerCard.getPosition();
+   local nPos = {
+       x = cPos.x - rPos.x * d,
+       y = (cPos.y - rPos.y * d) + 5,
+       z = cPos.z - rPos.z * d
+   }
+   coin.setPositionSmooth(nPos, false, false);
+
+   table.insert(gameModel.players[playerColor].coins, coin.getGUID())
+
+   coin.setVar("owner", playerColor)
+   local value = coin.getVar("value")
+   gameModel.players[playerColor].score = gameModel.players[playerColor].score + value
+
+   Wait.frames(function()
+        refillCoins(index)
+        if cb then cb() end
+   end, 10)
+end
+
+function refillCoins(index, cb)
+   local goldBag = getObjectFromGUID(keys.coinBags.gold)
+   local silverBag = getObjectFromGUID(keys.coinBags.silver)
+   local goldCoin = getGoldCoin()
+   local silverCoin = getSilverCoin()
+
+   if index == 1 then
+       if #goldBag.getObjects() > 0 then
+           local param = {position = loc.coins.gold, index = 0}
+           if cb ~= nil then param.callback_function = cb end
+           goldBag.takeObject(param)
+       elseif moveSilverCoin() == false and #silverBag.getObjects() > 0 then
+           local param = {position = loc.coins.gold, index = 0}
+           if cb ~= nil then param.callback_function = cb end
+           silverBag.takeObject(param)
+       end
+   elseif index == 2 then
+       if #silverBag.getObjects() <= 0 then return end
+       if getObjectAt(loc.coins.gold, "coin") == nil then return end
+       if isClass(getObjectAt(loc.coins.gold, "coin"), "silver") then return end
+
+       local param = {position = loc.coins.silver, index = 0}
+       if cb ~= nil then param.callback_function = cb end
+       silverBag.takeObject(param)
+   end
+end
+
+-- move the silver coin left, if it exists
+function moveSilverCoin()
+   local silverCoin = getObjectAt(loc.coins.silver, "coin")
+   if silverCoin == nil then return false end
+   silverCoin.setPositionSmooth(loc.coins.gold)
+   return true
+end

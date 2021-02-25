@@ -1,0 +1,15 @@
+modelClass = "card points"
+
+function onSave()
+    local data = {}
+    if owner ~= nil then data.owner = owner end
+    if index ~= nil then data.index = index end
+    return JSON.encode(data)
+end
+
+function onLoad(json)
+    if json == "" or json == nil then return end
+    local data = JSON.decode(json)
+    if data.owner ~= nil then owner = data.owner end
+    if data.index ~= nil then index = data.index end
+end

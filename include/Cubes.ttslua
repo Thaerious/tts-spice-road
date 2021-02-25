@@ -1,0 +1,255 @@
+-- A Collection of Cube Utility Functions --
+--------------------------------------------
+
+-- return a cube collection of all cubes belonging to the indicated (color) player
+-- owner (optional): the player color to retrive, if nil retrieve current player
+function getPlayerCubes(owner)
+    owner = owner or gameModel.currentPlayer
+    local collection = CubeCollection:new()
+    local tab = getAllObjects()
+
+    for i = 1,#tab do
+        if isClass(tab[i], "cube") and tab[i].getVar("owner") == owner then
+             collection:add(tab[i])
+        end
+    end
+    return collection
+end
+
+function sortCubes(color, cb)
+    cb = cb or function() end
+    local playerCard = getObjectFromGUID(keys.caravanCards[color])
+    local playerZone = getObjectFromGUID(keys.caravanCardZone[color])
+
+    local lastCube = nil -- used to wait for cb
+    local prevYpos = 2 -- gets set to the cube's y-position
+    local cubes = getPlayerCubes(color)
+
+    if cubes:isEmpty() then
+        cb()
+    end
+
+    local tempPos = playerCard.getPosition()
+    tempPos.z = tempPos.z - 5
+
+    for i,cube in ipairs(cubes) do
+        position = tempPos
+        prevYpos = position.y
+        position.y = prevYpos + 0.1
+        cube.setPosition(tempPos)
+        lastCube = cube
+    end
+
+    Wait.frames(function()
+        local free = getFreeSnapPoints(playerCard, playerZone)
+
+        -- add snappoints
+        local x = 0.7
+        for i = 1,5 do
+            position = playerCard.positionToWorld({x, 10.0, 0.5})
+            table.insert(free, position)
+            x = x - 0.4
+        end
+
+        local j = 1
+        local count = cubes:count()
+
+        function moveIfColor(cube, color)
+            if isClass(cube, color) then
+                free[j].y = prevYpos + 0.1
+                cube.setPositionSmooth(free[j])
+                cube.setRotation({0, 180, 180})
+                j = j + 1
+             end
+        end
+
+        for i,cube in ipairs(cubes) do moveIfColor(cube, "yellow") end
+        for i,cube in ipairs(cubes) do moveIfColor(cube, "red") end
+        for i,cube in ipairs(cubes) do moveIfColor(cube, "green") end
+        for i,cube in ipairs(cubes) do moveIfColor(cube, "brown") end
+    end, 1)
+
+    Wait.condition(cb, function() return lastCube.getPosition().y < 2 end)
+end
+
+-- get the selected cubes, if none are selected get the cubes under the mouse
+function cubesUnderMouse(color)
+    local selected = Player[color].getSelectedObjects()
+    if #selected == 0 then selected = {Player[color].getHoverObject()} end
+
+    local r = {}
+    for i,o in ipairs(selected) do
+        if isClass(o, "cube") and o.getVar("owner") == color then
+            table.insert(r, o)
+        end
+    end
+
+    return r
+end
+
+-- move all action cubes from from index to playercolor
+function collectActionCubes(playerColor, index)
+    local cubes = {}
+    local zone = getObjectFromGUID(keys.actionCardsScriptingZone[index])
+
+    if zone.getObjects() == nil then return end
+
+    for i, obj in ipairs(zone.getObjects()) do
+        if isClass(obj, "cube") then
+            table.insert(cubes, obj)
+        end
+    end
+
+    moveCubesToPlayerCard(playerColor, cubes)
+end
+
+function getActionCubes(index)
+    local cubes = CubeCollection:new()
+
+    local zone = getObjectFromGUID(keys.actionCardsScriptingZone[index]);
+    for i, obj in ipairs(zone.getObjects()) do
+        if isClass(obj, "cube") then
+            cubes:add(obj)
+        end
+    end
+
+    return cubes
+end
+
+function getCubeColor(cube)
+   if isClass(cube, "yellow") then return "yellow" end
+   if isClass(cube, "red") then return "red" end
+   if isClass(cube, "green") then return "green" end
+   if isClass(cube, "brown") then return "brown" end
+end
+
+-- move all cube objects from cubes:table to the player card of the provided color
+function moveCubesToPlayerCard(playerColor, cubes)
+   local playerCard = getObjectFromGUID(keys.caravanCards[playerColor])
+   local playerZone = getObjectFromGUID(keys.caravanCardZone[playerColor])
+   local free = getFreeSnapPoints(playerCard, playerZone)
+
+   -- add 5 random snappoints
+   for i = 1,5 do
+       local x = 1 - math.random() * 2
+       position = playerCard.positionToWorld({x, 10.0, 0.5})
+       table.insert(free, position)
+   end
+
+   for i, cube in ipairs(cubes) do
+       if cube ~= nil then
+           cubeSetOwner(cube, playerColor)
+           local position = nil;
+           if #free > 0 then
+               position = table.remove(free, 1)
+               position.y = 10.0;
+           else
+               local x = 1 - math.random() * 2
+               position = playerCard.positionToWorld({x, 10.0, 0.5})
+           end
+
+           cube.setPosition(position, false, false)
+           position.y = position.y - 0.1
+           cube.setPositionSmooth(position, false, false)
+       end
+   end
+end
+
+function cubeSetOwner(cube, playerColor)
+    cube.setVar("owner", playerColor)
+    if playerColor == nil then
+        cube.setDescription("No Owner")
+        cube.setDescription("No Owner")
+    else
+        cube.setDescription("Owner: " .. playerColor)
+    end
+     evaluatePointTakeButtons()
+end
+
+-- owner: the color of the player to give the cubes to
+-- cubeCount: an object of type CubeCount
+-- cb: callback function to call when all cubes are distributed
+function addCubesToPlayerCard(owner, cubeCount, cb)
+   local playerCard = getObjectFromGUID(keys.caravanCards[owner])
+   local playerZone = getObjectFromGUID(keys.caravanCardZone[owner])
+   local free = getFreeSnapPoints(playerCard, playerZone)
+
+   -- add 5 random snappoints
+   for i = 1,5 do
+       local x = 1 - math.random() * 2
+       position = playerCard.positionToWorld({x, 10.0, 0.5})
+       table.insert(free, position)
+   end
+
+   local newCubes = {}
+   local sum = cubeCount:sum()
+
+   local j = 1
+   for color, count in pairs(cubeCount) do
+       for i = 1,count do
+           if sum > 1 then
+               newCubes[#newCubes + 1] = giveCubeToPlayer(color, owner, free[j], nil);
+           else
+               newCubes[#newCubes + 1] = giveCubeToPlayer(color, owner, free[j], cb);
+           end
+           j = j + 1
+           sum = sum - 1
+       end
+   end
+
+   return newCubes
+end
+
+-- all new cubes come from this function
+-- return: new cube
+function giveCubeToPlayer(cubeColor, playerColor, position, cb)
+   cb = cb or function() end
+   position.y = 10.0
+
+   local bag = getObjectFromGUID(keys.bags[cubeColor]);
+   local cube = bag.takeObject({position = position, index = 0, smooth = false});
+   cubeSetOwner(cube, playerColor)
+
+   Wait.condition(cb, function()
+       if cube == nil then return true end
+       return cube.getPosition().y < 2
+   end)
+
+   return cube
+end
+
+
+-- get a collection of cubes on top of this object
+-- obj: the object in question
+-- distance: distance multiplier
+function getCubesOn(obj, distance)
+   distance = distance or 1
+
+   local bounds = obj.getBounds()
+   local pos = bounds.center
+   local scale = bounds.size
+
+   scale.x = scale.x * distance
+   scale.y = 2
+   scale.z = scale.z * distance
+   pos.y = 2
+
+   local tab = {
+       origin = pos,
+       direction = {0, 1, 0},
+       type = 3,
+       size = scale,
+       max_distance = 0
+   }
+   local hit = Physics.cast(tab)
+
+   local r = CubeCollection:new()
+
+   for i,o in ipairs(hit) do
+       if isClass(o.hit_object, "cube") then
+           r:add(o.hit_object)
+       end
+   end
+
+   return r
+end

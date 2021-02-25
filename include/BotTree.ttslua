@@ -1,0 +1,143 @@
+SANITY_CHECK = 100
+
+BotTree = {}
+
+function BotTree:new(state, scoreFunc)
+    local o = {
+        state = state,
+        scoreFunc = scoreFunc,
+        children = {},
+        score = scoreFunc:eval(state.cubes),
+        actionChain = {},
+        trim = 4,
+        depth = 0 -- root node
+    }
+
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+function BotTree:expand(actions)
+    local leafNodes = self:leafNodes()
+
+    if #self.children == 0 then
+        actions = actions or enumerateActions(self.state):refine("action", "play")
+        self:evaluateNextLevel(self.state, actions)
+    else
+        for i = 1, #leafNodes do
+            actions = enumerateActions(leafNodes[i].state):refine("action", "play")
+            leafNodes[i]:evaluateNextLevel(leafNodes[i].state, actions)
+            if i >= self.trim then goto doBreak end
+        end
+    end
+
+    ::doBreak::
+    self:sort()
+end
+
+function BotTree:sort()
+    for i = 1, #self.children do
+        self.children[i]:sort()
+    end
+    sort(self.children, function(a,b) return a:future() - b:future() end)
+end
+
+function BotTree:log(prefix, index)
+    index = index or 0
+    prefix = prefix or ""
+
+    log(prefix .. "[" .. self.depth .. ":" .. index .. "] " .. self:toString())
+
+    for i = 1, #self.children do
+        self.children[i]:log(prefix .. "  ", i)
+    end
+end
+
+function BotTree:toString()
+    local s = ""
+    if self.actionChain then
+        for j = 1, #self.actionChain do
+            local k = #self.actionChain - j + 1
+            local action = self.actionChain[k]
+
+            if action.action == "promote" then
+                s = s .. " " .. action.value
+            elseif action.action == "pay" then
+                s = s .. " pay:" .. action.value
+            else
+                s = s .. " " .. action.action
+            end
+
+            if action.card ~= nil then s = s .. ":" .. action.card end
+        end
+    end
+
+    local score = self.score
+    local future = self:future()
+    return s .. " " .. score .. " " .. future
+end
+
+function BotTree:leafNodes(collection)
+    collection = collection or {}
+
+    if #self.children == 0 then
+        collection[#collection + 1] = self
+    else
+        for i = 1, #self.children do
+            self.children[i]:leafNodes(collection)
+        end
+    end
+
+    return collection
+end
+
+-- for every state resulting from state * actions insert as child
+function BotTree:evaluateNextLevel(state, actions, parent)
+    for i = 1, #actions do
+        local nextState = updateState(state, actions[i]) -- the state that will result from the action
+
+        if nextState.state == "ready" then
+            local child = BotTree:new(nextState, self.scoreFunc)
+            child.depth = self.depth + 1
+            child.actionChain = self:getActionChain(parent, actions[i])
+            child.parent = self
+            self.children[#self.children + 1] = child
+        else
+            self:evaluateNextLevel(nextState, enumerateActions(nextState), {actions[i], parent})
+        end
+    end
+end
+
+function BotTree:getActionChain(parent, action)
+    local chain = {action}
+    while parent ~= nil do
+        chain[#chain + 1] = parent[1]
+        parent = parent[2]
+    end
+    return chain
+end
+
+function BotTree:future()
+    local leafNodes = self:leafNodes()
+    local best = 0
+
+    for i = 1,#leafNodes do
+        if leafNodes[i].score > best then best = leafNodes[i].score end
+    end
+
+    return best
+end
+
+-- sort in decending order where eval(a,b) returns a-b
+function sort(array, eval)
+    for i = 1,#array - 1 do
+        for j = 1, #array - i do
+            if eval(array[j], array[j+1]) < 0 then
+                t = array[j+1]
+                array[j+1] = array[j]
+                array[j] = t
+            end
+        end
+    end
+end
