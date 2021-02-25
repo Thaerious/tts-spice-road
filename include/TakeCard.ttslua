@@ -78,6 +78,7 @@ function evaluatePointTakeButtons()
     local function onDelay()
         -- if the current player has the cubes to purchase a points card, add a button
         for i, card in ipairs(getPointCards()) do
+            log(card.getGUID());
             local cost = CubeCount:new(card.getTable("model").cost)
             local playerCubes = getPlayerCubes(gameModel.currentPlayer)
 
