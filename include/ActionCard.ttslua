@@ -25,9 +25,9 @@ function onLoad(json)
 end
 
 -- trigger when a valid action card is dropped
-function onDrop(color)
+function onDrop(color)    
     local gameModel = Global.getTable("gameModel");
-    local isInHand = isInHand(card, color)
+    local isInHand = isInHand(self, color)
 
     if isInHand == false and state ~= "spent" and color == gameModel.currentPlayer then --
         self.registerCollisions()
