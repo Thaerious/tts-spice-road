@@ -7,11 +7,8 @@ function onLoad(saved_data)
     setupCaravanCards()
     addHotkey("quickAction", quickAction)
 
-    -- setup cube bags collission / class
-    getObjectFromGUID(keys.bags.yellow).registerCollisions()
-    getObjectFromGUID(keys.bags.red).registerCollisions()
-    getObjectFromGUID(keys.bags.green).registerCollisions()
-    getObjectFromGUID(keys.bags.brown).registerCollisions()
+    setupCollisionHooks();
+
     addClass(getObjectFromGUID(keys.bags.yellow), "cubeBag")
     addClass(getObjectFromGUID(keys.bags.red), "cubeBag")
     addClass(getObjectFromGUID(keys.bags.green), "cubeBag")

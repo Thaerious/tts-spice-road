@@ -1,0 +1,46 @@
+function setupCollisionHooks()
+    getObjectFromGUID(keys.bags.yellow).registerCollisions()
+    getObjectFromGUID(keys.bags.red).registerCollisions()
+    getObjectFromGUID(keys.bags.green).registerCollisions()
+    getObjectFromGUID(keys.bags.brown).registerCollisions()
+end
+
+-- check card collisions to automate actions
+function onObjectCollisionEnter(registeredObject, collisionInfo)
+    log("onObjectCollisionEnter " .. registeredObject.getName()) 
+    if gameModel.state == "not_started" then return end
+    local collisionObject = collisionInfo.collision_object
+
+    -- trigger pawn move
+    if isClass(registeredObject, "pawn") and isClass(collisionObject, "caravan") then
+        onPawnCollideCaravan(collisionObject)
+        return
+    end
+
+    -- cube collides with cube bag
+    if isClass(registeredObject, "cubeBag") and isClass(collisionObject, "cube") then
+        collisionObject.destruct()
+        evaluatePointTakeButtons()
+        return
+    end
+
+    -- unowned cube collides with caravan card
+    if isClass(registeredObject, "caravan") and isClass(collisionObject, "cube") and collisionObject.getVar("owner") == nil then
+        cubeSetOwner(collisionObject,  registeredObject.getVar("owner"))
+        return
+    end
+
+    -- only trigger when the owner is acting
+    if registeredObject.getVar("owner") ~= gameModel.currentPlayer then return end
+
+    -- when an action card collides
+
+    -- if isClass(registeredObject, "card") then
+    --     if isActiveSpent() == false and registeredObject.getGUID() ~= gameModel.active.guid then
+    --         setActive(registeredObject)
+    --         if isClass(registeredObject, "collect") then collect() end
+    --     elseif isClass(collisionObject, "cube") and registeredObject.getVar("status") ~= "spent" then
+    --         cubeCollideCard(registeredObject, collisionObject)
+    --     end
+    -- end
+end

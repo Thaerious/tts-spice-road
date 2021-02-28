@@ -6,3 +6,34 @@ function resetState()
     state = "ready";
     count = startingCount;
 end
+
+function setupContextMenu()
+    self.clearContextMenu()
+    self.addContextMenuItem("Yellow -> Red", function(playerColor)
+        local cubes = getPlayerCubes(owner)
+        local cube = cubes:getCube("yellow")
+        quickPromote(CubeCollection:new(cube), playerColor)
+    end)
+
+    self.addContextMenuItem("Red -> Green", function(playerColor)
+        local cubes = getPlayerCubes(owner)
+        local cube = cubes:getCube("red")
+        quickPromote(CubeCollection:new(cube), playerColor)
+    end)
+
+    self.addContextMenuItem("Green -> Brown", function(playerColor)
+        local cubes = getPlayerCubes(owner)
+        local cube = cubes:getCube("green")
+        quickPromote(CubeCollection:new(cube), playerColor)
+    end)
+end
+
+-- set the last card played
+-- updates the game model for other methods to poll
+function setActive()
+    local gameModel = Global.getTable("gameModel");
+    gameModel.active.guid = self.getGUID()
+    gameModel.active.action = "promote"
+    gameModel.active.value = startingCount -- provided in including files
+    Global.setTable("gameModel", gameModel);
+end

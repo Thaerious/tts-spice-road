@@ -1,0 +1,9 @@
+modelClass = "caravan"
+owner = "Red"
+
+
+
+
+
+
+

@@ -1,0 +1,8 @@
+modelClass = "pawn"
+
+
+
+
+
+
+

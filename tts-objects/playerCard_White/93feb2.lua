@@ -1,0 +1,10 @@
+
+modelClass = "caravan"
+owner = "White"
+
+
+
+
+
+
+

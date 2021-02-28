@@ -122,24 +122,3 @@ function doPromote(cubes, cb)
 
    return newCubes
 end
-
--- Called when an action-collect card is played.
--- The card is considered played when it collides with something.
--- see onObjectCollisionEnter in Hooks.ttslua
-function collect()
-   log("collect");
-   local card = getObjectFromGUID(gameModel.active.guid)
-   local player = Player[gameModel.currentPlayer]
-   local cubes = card.getTable("cubes")
-   local count = CubeCount:new(cubes)
-   local playerName = Player[gameModel.currentPlayer].steam_name or "?"
-   local msg = playerName .. " played card collect " .. count:toString()
-   broadcastToAll(msg, gameModel.currentPlayer)
-
-   card.unregisterCollisions()
-   card.setVar("state", "spent");
-
-   addCubesToPlayerCard(gameModel.currentPlayer, CubeCount:new(card.getTable("cubes")), function()
-      passTurn(card.getVar("owner"))
-   end);
-end

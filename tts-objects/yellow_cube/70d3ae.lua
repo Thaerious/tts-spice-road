@@ -1,0 +1,12 @@
+
+modelClass = "cube yellow"
+
+
+
+
+
+
+
+
+
+

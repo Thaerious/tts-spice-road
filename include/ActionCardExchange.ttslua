@@ -1,7 +1,26 @@
 #include ActionCard
+#include CubeCount
 
 modelClass = "card action exchange"
 
 function resetState()
     state = "ready";
+end
+
+function setupContextMenu()
+    self.clearContextMenu()
+    self.addContextMenuItem("Do Exchange", quickAction)
+end
+
+-- set the last card played
+-- updates the game model for other methods to poll
+function setActive()
+    local gameModel = Global.getTable("gameModel");
+    gameModel.active.guid = self.getGUID()
+    gameModel.active.action = "exchange"
+    gameModel.active.value = {
+        from = CubeCount:new(from), -- provided in including files
+        to = CubeCount:new(to),     -- provided in including files
+    }
+    Global.setTable("gameModel", gameModel);
 end
