@@ -1,12 +1,3 @@
--- start dealing from position 1
--- only use for first propagate the board
--- type {"actionCards", "pointCards"}
--- callback, function to call when all cards are dealt
-function dealCards(deckType, callback)
-   getObjectFromGUID(keys[deckType]).randomize();
-   dealNextCard(deckType, 1, callback)
-end
-
 -- deal a single card from the deck of 'type'
 -- invoke 'callback when done'
 -- this will recurse index + 1 until all empty locations are filled
@@ -86,3 +77,29 @@ function placeCardBesideCaravan(card, playerColor)
     rotation.y = (rotation.y + 180) % 360
     card.setRotation(rotation);
 end
+
+function sortActionCards(color, menuPos)
+    local caravanCard = getObjectFromGUID(keys.caravanCardZone[color])
+    local pos = caravanCard.getPosition();
+    pos.x = pos.x - 6
+    pos.z = pos.z - 7.1
+    pos.y = 1
+ 
+    local j = 1
+    for i,guid in ipairs(gameModel.players[color].actionCards) do
+        local obj = getObjectFromGUID(guid)
+        if isInHand(obj, color) == false then
+            obj.setRotation({x=0, y=180, z=0})
+            obj.setPosition(pos)
+            pos.x = pos.x + 2
+            pos.y = pos.y + 0.01
+            j = j + 1
+        end
+ 
+        if j > 10 then
+            j = 1
+            pos.z = pos.z - 6.1
+            pos.x = caravanCard.getPosition().x - 6
+        end
+    end
+ end

@@ -1,5 +1,16 @@
 modelClass = "card points"
 
+-- include in implementation 
+-- model = {
+--     value = ?,
+--     cost = {
+--         yellow = ?,
+--         red = ?,
+--         green = ?,
+--         brown = ?
+--     }
+-- }
+
 function onSave()
     local data = {}
     if owner ~= nil then data.owner = owner end

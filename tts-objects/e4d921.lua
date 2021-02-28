@@ -1,8 +1,2 @@
 modelClass = "bag yellow"
 
-
-
-
-
-
-

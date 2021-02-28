@@ -1,0 +1,148 @@
+#include UIControl
+#include Cards
+#include Cubes
+#include CubeCount
+#include Coins
+#include GameState
+
+DEBUG_PLAYER_COUNT = 3
+
+-- Setup the board to start playing the game.
+function startGame(a, b)
+    -- if a.host == false then
+    --     broadcastToAll("Only the host can start the game")
+    --     return
+    -- end
+
+    gameModel.numPlayers = #Player.getPlayers()
+    if gameModel.numPlayers == 1 then gameModel.numPlayers = DEBUG_PLAYER_COUNT end -- debug mode
+
+    clearContextMenu()
+    addContextMenuItem("Sort Action Cards", sortActionCards)
+    addContextMenuItem("Sort Cubes", function(color, b) sortCubes(color) end)
+    clearExtraPieces()
+    removeUnplayedColors();
+    setupTurns(gameModel.numPlayers)
+    assignPlayers() -- randomize the player colors
+    determineVictoryCondition();
+    dealCubes()
+    hideUI()
+    setupCoins()
+    dealCards("pointCards", nil);
+    dealCards("actionCards", function() startTurn(gameModel.currentPlayer) end);
+end
+
+function removeUnplayedColors()
+    local newTurns = {}
+    for i = 1, gameModel.numPlayers do
+        newTurns[#newTurns + 1] = gameModel.turns[i]
+    end
+    gameModel.turns = newTurns;
+end
+
+function determineVictoryCondition()
+    if gameModel.numPlayers > 3 then
+        gameModel.victoryCondition = 5
+    else
+        gameModel.victoryCondition = 6
+    end    
+end
+
+function dealCubes()
+    local cubeCount = CubeCount:new()
+    cubeCount.yellow = 3
+
+    for i = 1, gameModel.numPlayers do
+        if i == 2 then
+            cubeCount.yellow = 4
+        elseif i == 4 then
+            cubeCount.red = 1
+        end
+
+        local owner = gameModel.turns[i]
+        addCubesToPlayerCard(owner, cubeCount, nil)
+
+    end
+end
+
+function setupCoins()
+    local goldBag = getObjectFromGUID(keys.coinBags.gold)
+    local silverBag = getObjectFromGUID(keys.coinBags.silver)
+
+    local n = (5 - gameModel.numPlayers) * 2
+
+    for i = 1,n do
+        goldBag.takeObject().destruct()
+        silverBag.takeObject().destruct()
+    end
+
+    refillCoins(1, function() refillCoins(2) end)
+end
+
+-- start dealing from position 1
+-- only use for first propagate the board
+-- type {"actionCards", "pointCards"}
+-- callback, function to call when all cards are dealt
+function dealCards(deckType, callback)
+    getObjectFromGUID(keys[deckType]).randomize();
+    dealNextCard(deckType, 1, callback)
+ end
+
+ function clearExtraPieces()
+    for i = gameModel.numPlayers + 1, #gameModel.turns do
+        local color = gameModel.turns[i]
+
+        local zone = getObjectFromGUID(keys.caravanCardZone[color])
+        if (zone == nil) then return end -- assume it and all associated objects are already destroyed
+
+        local objects = getObjectFromGUID(keys.caravanCardZone[color]).getObjects()
+        for i,o in ipairs(objects) do o.destruct() end
+
+        getObjectFromGUID(keys.caravanCards[color]).destruct()
+        getObjectFromGUID(keys.caravanCardZone[color]).destruct()
+        getObjectFromGUID(keys.scores[color]).destruct()
+        getObjectFromGUID(keys.names[color]).destruct()
+
+        getObjectFromGUID(keys.startingCards[color][1]).destruct()
+        getObjectFromGUID(keys.startingCards[color][2]).destruct()
+    end
+end
+
+-- randomize player positions
+function assignPlayers()
+    local players = Player.getPlayers()
+
+    for i = 1, #players do
+        local player = Player.getPlayers()[i]
+        player.changeColor("Grey")
+    end
+
+    local availableColors = {}
+    for i = 1, #gameModel.turns do
+        availableColors[i] = gameModel.turns[i]
+    end
+
+    -- assign player colors
+    while #Player.getSpectators() > 0 do
+        local r = math.random(1, #Player.getSpectators())
+        local player = Player.getSpectators()[r]
+
+        local q = math.random(1, #availableColors)
+        local color = table.remove(availableColors, q)
+        player.changeColor(color)
+    end
+
+    for i,player in ipairs(Player.getPlayers()) do
+        local name = getObjectFromGUID(keys.names[player.color])
+        name.setValue(player.steam_name)
+    end
+end
+
+-- setup the turn order for 'n' participants
+function setupTurns(n)
+    local last = gameModel.turns[n]
+    for i = 1,n do
+        gameModel.nextPlayer[last] = gameModel.turns[i]
+        last = gameModel.turns[i]
+    end
+end

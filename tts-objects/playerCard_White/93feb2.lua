@@ -2,9 +2,3 @@
 modelClass = "caravan"
 owner = "White"
 
-
-
-
-
-
-

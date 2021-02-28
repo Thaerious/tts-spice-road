@@ -1,9 +1,3 @@
 modelClass = "caravan"
 owner = "Yellow"
 
-
-
-
-
-
-

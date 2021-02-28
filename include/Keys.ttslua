@@ -1,7 +1,7 @@
 keys = {
     board = "88e31a",
-    pointCards = "0b392c",
-    actionCards = "757670",
+    pointCards = "258d2e",
+    actionCards = "bebb58",
     playingIndicator = "085f7b",
     centerText = "3b67af", -- last turn
     startingCards = {

@@ -1,5 +1,6 @@
 #include Keys
 #include UIcontrol
+#include StartGame
 -- #include CollisionHooks
 -- #include Hooks
 -- #include Cubes

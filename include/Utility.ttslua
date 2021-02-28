@@ -51,32 +51,6 @@ function getActionCards()
    return getCards("actionCardsScriptingZone")
 end
 
-function sortActionCards(color, menuPos)
-   local caravanCard = getObjectFromGUID(keys.caravanCardZone[color])
-   local pos = caravanCard.getPosition();
-   pos.x = pos.x - 6
-   pos.z = pos.z - 7.1
-   pos.y = 1
-
-   local j = 1
-   for i,guid in ipairs(gameModel.players[color].actionCards) do
-       local obj = getObjectFromGUID(guid)
-       if isInHand(obj, color) == false then
-           obj.setRotation({x=0, y=180, z=0})
-           obj.setPosition(pos)
-           pos.x = pos.x + 2
-           pos.y = pos.y + 0.01
-           j = j + 1
-       end
-
-       if j > 10 then
-           j = 1
-           pos.z = pos.z - 6.1
-           pos.x = caravanCard.getPosition().x - 6
-       end
-   end
-end
-
 function movePlayingIndicator(color)
    local pawn = getObjectFromGUID(keys.playingIndicator)
    local playerCard = getObjectFromGUID(keys.caravanCards[color])
@@ -272,22 +246,6 @@ function moveCubesLeft(from)
            obj.setPositionSmooth(position, false, false)
        end
    end
-end
-
--- obj: an object with snap points
--- for all snappoints on 'obj',
--- return all snappoints positions which do not have a nearby cube
-function getFreeSnapPoints(obj)
-   local freePoints = {};
-
-   for i, s in ipairs(obj.getSnapPoints()) do
-       local p = obj.positionToWorld(s.position)
-       if getObjectAt(p, "cube", 1) == nil then
-           freePoints[#freePoints + 1] = p
-       end
-   end
-
-   return freePoints;
 end
 
 -- return true if the object contains a 'type' var and the 'type' var contains

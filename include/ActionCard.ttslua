@@ -2,8 +2,6 @@
 
 state = "spent"
 
-log(self.getGUID())
-
 function onSave()
     local data = {}
     if owner ~= nil then data.owner = owner end

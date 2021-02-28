@@ -1,5 +1,24 @@
+#include Utility
+#include TakeCard
+
 -- A Collection of Cube Utility Functions --
 --------------------------------------------
+
+-- obj: an object with snap points
+-- for all snappoints on 'obj',
+-- return all snappoints positions which do not have a nearby cube
+function getFreeSnapPoints(obj)
+    local freePoints = {};
+ 
+    for i, s in ipairs(obj.getSnapPoints()) do
+        local p = obj.positionToWorld(s.position)
+        if getObjectAt(p, "cube", 1) == nil then
+            freePoints[#freePoints + 1] = p
+        end
+    end
+ 
+    return freePoints;
+ end
 
 -- return a cube collection of all cubes belonging to the indicated (color) player
 -- owner (optional): the player color to retrive, if nil retrieve current player
