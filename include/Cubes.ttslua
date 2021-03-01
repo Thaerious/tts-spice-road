@@ -1,5 +1,6 @@
 #include Utility
 #include TakeCard
+#include CubeCollection
 
 -- A Collection of Cube Utility Functions --
 --------------------------------------------

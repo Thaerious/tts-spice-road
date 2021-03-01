@@ -3,7 +3,7 @@
 -- this will recurse index + 1 until all empty locations are filled
 -- type {"actionCards", "pointCards"}
 function dealNextCard(deckType, index, callback)
-   --callback = callback or function() end
+   callback = callback or function() end
    local scriptingZoneName = deckType .. "ScriptingZone"
    local max = #keys[deckType];
    local zone = getObjectFromGUID(keys[scriptingZoneName][index])
@@ -24,7 +24,7 @@ function dealNextCard(deckType, index, callback)
        end
    }
 
-   local deck = getObjectAt(loc.decks[deckType], "deck")
+   local deck = getObjectFromGUID(keys[deckType]);
 
    local card = nil
    if deck == nil then

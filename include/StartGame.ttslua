@@ -84,6 +84,7 @@ end
 -- type {"actionCards", "pointCards"}
 -- callback, function to call when all cards are dealt
 function dealCards(deckType, callback)
+    callback = callback or function() end
     getObjectFromGUID(keys[deckType]).randomize();
     dealNextCard(deckType, 1, callback)
  end
@@ -103,8 +104,9 @@ function dealCards(deckType, callback)
         getObjectFromGUID(keys.scores[color]).destruct()
         getObjectFromGUID(keys.names[color]).destruct()
 
-        getObjectFromGUID(keys.startingCards[color][1]).destruct()
-        getObjectFromGUID(keys.startingCards[color][2]).destruct()
+        for i,card in ipairs(Player[color].getHandObjects()) do
+            card.destruct();
+        end
     end
 end
 
