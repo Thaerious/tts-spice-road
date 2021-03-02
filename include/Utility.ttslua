@@ -308,18 +308,6 @@ function getPlayableCards(color)
     return r
  end
 
--- turn autodrop on/off
--- will add context menu items, that won't be removed
-function toggleDev(color)
-   if gameModel.players[color].dev == true then
-       gameModel.players[color].dev = false
-   else
-       gameModel.players[color].dev = true
-       addContextMenuItem("Start Bot", startBot)
-       addContextMenuItem("Bot Action", botAction)
-   end
-end
-
 function indexOf(table, value)
    for i,v in pairs(table) do
        if v == value then return i end
@@ -336,7 +324,6 @@ function idle()
 
     local startTime = os.clock()
     local action = bot:getAction()
-    log(action)
     if action ~= nil then bot:doAction(action) end
     log("Action Time :" .. os.clock() - startTime)
 end

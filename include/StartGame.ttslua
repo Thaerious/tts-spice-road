@@ -8,6 +8,7 @@
 DEBUG_PLAYER_COUNT = 3
 
 -- Setup the board to start playing the game.
+-- UI button calls this function
 function startGame(a, b)
     -- if a.host == false then
     --     broadcastToAll("Only the host can start the game")
@@ -17,9 +18,7 @@ function startGame(a, b)
     gameModel.numPlayers = #Player.getPlayers()
     if gameModel.numPlayers == 1 then gameModel.numPlayers = DEBUG_PLAYER_COUNT end -- debug mode
 
-    clearContextMenu()
-    addContextMenuItem("Sort Action Cards", sortActionCards)
-    addContextMenuItem("Sort Cubes", function(color, b) sortCubes(color) end)
+    hideStartButton()
     clearExtraPieces()
     removeUnplayedColors();
     setupTurns(gameModel.numPlayers)

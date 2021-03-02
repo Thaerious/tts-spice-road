@@ -1,13 +1,9 @@
-DEBUG_PLAYER_COUNT = 3
-
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad(saved_data)
     getObjectFromGUID(keys.playingIndicator).registerCollisions()
     setupZones()
     setupCaravanCards()
     addHotkey("quickAction", quickAction)
-
-    setupCollisionHooks();
 
     addClass(getObjectFromGUID(keys.bags.yellow), "cubeBag")
     addClass(getObjectFromGUID(keys.bags.red), "cubeBag")
@@ -27,7 +23,7 @@ function onLoad(saved_data)
     if getObjectFromGUID(keys.actionCards) then getObjectFromGUID(keys.actionCards).interactable = false end
     getObjectFromGUID(keys.pointCards).interactable = false
 
-    addContextMenuItem("Start Game", startGame)
+    -- addContextMenuItem("Start Game", startGame, true, true)
     replaceCubes()
 end
 

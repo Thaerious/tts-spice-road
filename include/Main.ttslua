@@ -1,16 +1,4 @@
 #include Keys
 #include UIcontrol
 #include StartGame
--- #include CollisionHooks
--- #include Hooks
--- #include Cubes
--- #include CubeCount
--- #include CubeCollection
--- #include Startup
--- #include Utility
--- #include Actions
--- #include Coins
--- #include Hover
--- #include TakeCard
--- #include GameState
--- #include Cards
+#include OnLoad

@@ -5,3 +5,7 @@ end
 function hideWelcome()
     UI.hide("pWelcome")
 end
+
+function hideStartButton()
+    UI.hide("bStartGame")
+end
