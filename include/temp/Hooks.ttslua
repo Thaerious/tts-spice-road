@@ -1,8 +1,3 @@
--- the onLoad hook can be fround in the Startup.ttslua module
-
-function onSave()
-    return JSON.encode(gameModel)
-end
 
 function cubeCollideCard(card, cube)
     local activeObject = getObjectFromGUID(gameModel.active.guid)

@@ -20,32 +20,24 @@ function onLoad(json)
     if data.ready ~= nil then ready = data.ready end
     if data.state ~= nil then state = data.state end
     if data.count ~= nil then count = data.count end
+
+    if owner and isInHand(self, owner) then resetState() end
 end
-
--- trigger when a valid action card is dropped
-function onDrop(color)    
-    local gameModel = Global.getTable("gameModel");
-    local isInHand = isInHand(self, color)
-
-    if isInHand == false and state ~= "spent" and color == gameModel.currentPlayer then --
-        self.registerCollisions()
-        setupContextMenu(card) -- provided including files
-    elseif isInHand == true then
-        self.unregisterCollisions()
-        resetState() -- provided in including files
-    end
+  
+function onDrop()
+    -- resetState provided in including files
+    if isInHand(self, owner) then resetState() end
 end
 
 function onCollisionEnter(collisionInfo)
-    local gameModel = Global.getTable("gameModel");
-    if isActiveSpent() == false and self.getGUID() ~= gameModel.active.guid then
-        setActive() -- provided in including files
+    log("collision " .. self.getGUID())
+    if owner == nil then return end
+    local isInHand = isInHand(self, owner)
+    local gameModel = Global.getTable("gameModel")
+    
+    if gameModel.active.guid ~= "" then return end -- is another action card currently in play?
+    if isInHand == false and state ~= "spent" and owner == gameModel.currentPlayer then
+        setupContextMenu(card) -- provided including files
+        setActive() -- provided in including files, set this as active card in game model
     end
-end
-
-function isActiveSpent()
-    local gameModel = Global.getVar("gameModel")
-    if gameModel.active.guid == "" then return false end
-    local activeCard = getObjectFromGUID(gameModel.active.guid)
-    return activeCard.getVar("state") == "spent"
 end

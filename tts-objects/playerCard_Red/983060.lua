@@ -1,3 +1,0 @@
-modelClass = "caravan"
-owner = "Red"
-

@@ -19,28 +19,7 @@ function setActive()
     gameModel.active.guid = self.getGUID()
     gameModel.active.action = "collect"
     gameModel.active.value = cubes -- provided in including files
-    collect()
-    Global.setTable("gameModel", gameModel);
-end
-
--- Called when an action-collect card is played.
--- The card is considered played when it collides with something.
--- see onObjectCollisionEnter in Hooks.ttslua
-function collect()
-    local gameModel = Global.getTable("gameModel");
-    local player = Player[gameModel.currentPlayer]
-    local count = CubeCount:new(cubes)
-    local playerName = Player[gameModel.currentPlayer].steam_name or "?"
-    local msg = playerName .. " played card collect " .. count:toString()
-
-    broadcastToAll(msg, gameModel.currentPlayer)
- 
-    self.unregisterCollisions()
     state = spent;
- 
-    Global.call(
-        "addCubesToPlayerCard",
-        cubes, -- provided in including files
-        function() passTurn(owner) end 
-    );
- end
+    Global.setTable("gameModel", gameModel);
+    Global.call("doCollect")
+end

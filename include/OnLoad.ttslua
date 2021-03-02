@@ -1,6 +1,9 @@
+log("onLoad.lua")
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad(saved_data)
+    log("onLoad")
     getObjectFromGUID(keys.playingIndicator).registerCollisions()
+
     setupZones()
     setupCaravanCards()
     addHotkey("quickAction", quickAction)
@@ -14,6 +17,7 @@ function onLoad(saved_data)
         local loaded_data = JSON.decode(saved_data)
         if loaded_data.state ~= "not_started" then
             gameModel = loaded_data
+            hideStartButton();
             loadSavedData()
         end
     end
@@ -23,12 +27,21 @@ function onLoad(saved_data)
     if getObjectFromGUID(keys.actionCards) then getObjectFromGUID(keys.actionCards).interactable = false end
     getObjectFromGUID(keys.pointCards).interactable = false
 
-    -- addContextMenuItem("Start Game", startGame, true, true)
     replaceCubes()
+    claimOwners()
+end
+
+function claimOwners()
+    for i = 1,#gameModel.turns do        
+        local color = gameModel.turns[i]
+        local handObjects = getPlayableCards(color)   
+        for index, handObject in ipairs(handObjects) do
+            handObject.setVar("owner", color)
+        end
+    end
 end
 
 function loadSavedData()
-    hideUI()
     addTakeButton(getActionCards()[1], "takeActionCard")
 
     for i = 2, gameModel.paidIndex + 1 do
@@ -70,7 +83,6 @@ function setupCaravanCards()
             caravanCard.registerCollisions()
         end
     end
-
 end
 
 function setupRestButton(color)
@@ -112,4 +124,8 @@ function setupZones()
             end
         end
     end
+end
+
+function onSave()
+    return JSON.encode(gameModel)
 end

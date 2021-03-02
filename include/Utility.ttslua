@@ -287,7 +287,7 @@ end
 
 -- return true is object is in the hand of player color
 function isInHand(object, color)
-   local handObjects = getPlayableCards(color)   
+   local handObjects = getPlayableCards(color)
    for index, handObject in ipairs(handObjects) do
        if (handObject == object) then
             return true
@@ -297,9 +297,9 @@ function isInHand(object, color)
 end
 
 -- return action cards currently in the hand zone of player 'color'.
-function getPlayableCards(color)
+function getPlayableCards(color) 
     r = {}
-    
+
     local handObjects = Player[color].getHandObjects();    
 
     for i,card in ipairs(handObjects) do

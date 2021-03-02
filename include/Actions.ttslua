@@ -1,3 +1,16 @@
+-- Called when an action-collect card is played.
+-- The card is considered played when it collides with something.
+-- see onObjectCollisionEnter in Hooks.ttslua
+function doCollect()
+    local player = Player[gameModel.currentPlayer]
+    local count = CubeCount:new(gameModel.active.value)
+    local playerName = Player[gameModel.currentPlayer].steam_name or "?"
+    local msg = playerName .. " played card collect " .. count:toString()
+
+    broadcastToAll(msg, gameModel.currentPlayer)
+    addCubesToPlayerCard(gameModel.currentPlayer, gameModel.active.value, function() passTurn(owner) end)
+ end
+
 -- called when a action-exchange card starts colliding
 -- removes valid cubes is available and inserts new cubes
 function broadcastExchangeCard(card)
