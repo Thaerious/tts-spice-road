@@ -1,4 +1,0 @@
-
-modelClass = "caravan"
-owner = "White"
-

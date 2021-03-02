@@ -1,3 +1,0 @@
-
-modelClass = "cube yellow"
-

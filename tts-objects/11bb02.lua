@@ -1,2 +1,0 @@
-modelClass = "bag red"
-
